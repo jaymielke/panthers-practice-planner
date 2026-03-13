@@ -16,9 +16,8 @@ export default function PracticePlanner() {
   const [practiceDate, setPracticeDate] = useState(todayString);
   const [selectedPracticeId, setSelectedPracticeId] = useState(null);
   const [practice, setPractice] = useState([]);
-  const [startTime, setStartTime] = useState("17:00"); // default 5:00 PM
+  const [startTime, setStartTime] = useState("17:00");
 
-  // Add Drill form state
   const [drillName, setDrillName] = useState("");
   const [drillNotes, setDrillNotes] = useState("");
   const [drillVideo, setDrillVideo] = useState("");
@@ -27,7 +26,6 @@ export default function PracticePlanner() {
 
   const categories = ["Hitting", "Fielding", "Throwing", "Base Running", "Warmup"];
 
-  // ---------- Load from localStorage ----------
   useEffect(() => {
     const savedDrills = localStorage.getItem("drills");
     const savedHistory = localStorage.getItem("practiceHistory");
@@ -46,7 +44,6 @@ export default function PracticePlanner() {
   useEffect(() => { localStorage.setItem("drills", JSON.stringify(drills)); }, [drills]);
   useEffect(() => { localStorage.setItem("practiceHistory", JSON.stringify(practiceHistory)); }, [practiceHistory]);
 
-  // ---------- Functions ----------
   function addDrill() {
     if (!drillName) return;
     const newDrill = {
@@ -95,7 +92,6 @@ export default function PracticePlanner() {
 
   function getPracticesForDate(date) { return practiceHistory.filter(p => p.date === date); }
 
-  // ---------- Helper: Generate schedule ----------
   function format12Hour(hour24, minute) {
     let suffix = hour24 >= 12 ? "PM" : "AM";
     let hour12 = hour24 % 12 || 12;
@@ -120,7 +116,6 @@ export default function PracticePlanner() {
     return schedule;
   }
 
-  // ---------- Styles ----------
   const pageStyle = { padding: "20px", maxWidth: "700px", margin: "auto", fontFamily: "Arial", minHeight: "100vh", backgroundColor: COLORS.blue, color: COLORS.black };
   const buttonStyle = { display: "block", margin: "15px auto", padding: "15px", width: "80%", borderRadius: "12px", backgroundColor: COLORS.white, color: COLORS.blue, fontSize: "18px", fontWeight: "bold", border: "none", cursor: "pointer" };
   const cardStyle = { border: "1px solid #ccc", borderRadius: "8px", padding: "10px", marginBottom: "10px", backgroundColor: COLORS.white, color: COLORS.black };
@@ -130,12 +125,11 @@ export default function PracticePlanner() {
   const drillNoteStyle = { margin: "2px 0" };
   const videoLinkStyle = { color: COLORS.blue, textDecoration: "underline" };
 
-  // ---------- Render Pages ----------
   if (currentPage === "home") {
     return (
       <div style={{ ...pageStyle, textAlign: "center" }}>
-        <img src="/icon-192.png" alt="Panthers Logo" style={{ width: "120px", marginBottom: "20px" }} />
-        <h1 style={{ color: COLORS.white }}>Kitchener Panthers U8 Practice Planner ⚾</h1>
+        <img src="/icon-192.png" alt="Logo" style={{ width: "120px", marginBottom: "20px" }} />
+        <h1 style={{ color: COLORS.white }}>Practice Planner</h1>
         {["Add a New Drill","Create a New Practice Plan","View a Practice Plan"].map((text, idx) => (
           <button key={idx} onClick={() => setCurrentPage(text.includes("Drill")?"addDrill":text.includes("Create")?"createPractice":"viewPractice")} style={buttonStyle}>{text}</button>
         ))}
@@ -147,7 +141,7 @@ export default function PracticePlanner() {
     return (
       <div style={pageStyle}>
         <button onClick={() => setCurrentPage("home")} style={{ marginBottom: "15px" }}>⬅ Home</button>
-        <h2>Add Drill</h2>
+        <h1 style={{ color: COLORS.black, marginBottom: "20px" }}>Add Drill</h1>
         <input placeholder="Drill Name" value={drillName} onChange={e=>setDrillName(e.target.value)} style={{ width: "100%", padding: "8px" }} />
         <br /><br />
         <select value={drillCategory} onChange={e=>setDrillCategory(e.target.value)} style={{ width: "100%", padding: "8px" }}>
@@ -165,7 +159,7 @@ export default function PracticePlanner() {
         <br /><br />
         <button onClick={addDrill} style={{ padding: "12px 20px", borderRadius:"8px", backgroundColor: COLORS.black, color: COLORS.white, fontWeight:"bold", border:"none" }}>Save Drill</button>
 
-        <h2>Existing Drills</h2>
+        <h1 style={{ color: COLORS.black, marginTop: "30px", marginBottom:"10px" }}>Existing Drills</h1>
         {drills.map(d => (
           <div key={d.id} style={cardStyle}>
             <strong>{d.name}</strong> ({d.category}) — Players Needed: {d.playersNeeded}
@@ -181,7 +175,7 @@ export default function PracticePlanner() {
     return (
       <div style={pageStyle}>
         <button onClick={() => setCurrentPage("home")} style={{ marginBottom: "15px" }}>⬅ Home</button>
-        <h2>Create / Modify Practice Plan</h2>
+        <h1 style={{ color: COLORS.black, marginBottom: "20px" }}>Create Practice Plan</h1>
         <label>Date: </label>
         <input type="date" value={practiceDate} onChange={e=>setPracticeDate(e.target.value)} />
         <br /><br />
@@ -211,7 +205,7 @@ export default function PracticePlanner() {
     return (
       <div style={pageStyle}>
         <button onClick={() => setCurrentPage("home")} style={{ marginBottom: "15px" }}>⬅ Home</button>
-        <h2>View Practice Plan</h2>
+        <h1 style={{ color: COLORS.black, marginBottom: "20px" }}>View Practice Plan</h1>
         <label>Select Date: </label>
         <input type="date" value={practiceDate} onChange={e=>setPracticeDate(e.target.value)} />
         <br /><br />
