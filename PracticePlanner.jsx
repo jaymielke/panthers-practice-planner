@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-// Make sure to include Font Awesome in your index.html:
+
+// Font Awesome CDN will be loaded in index.html head:
 // <script src="https://kit.fontawesome.com/YOUR_KIT_ID.js" crossorigin="anonymous"></script>
 
 const COLORS = {
-  panthersBlue: "#5f8db5",
+  primary: "#5f8db5",
   black: "#000000",
   white: "#FFFFFF",
   lightGray: "#f4f4f4",
@@ -35,21 +36,15 @@ export default function PracticePlanner() {
 
   const categories = ["Hitting", "Fielding", "Throwing", "Base Running", "Warmup"];
 
+  // Load saved drills and practice history
   useEffect(() => {
     const savedDrills = localStorage.getItem("drills");
     const savedHistory = localStorage.getItem("practiceHistory");
     if (savedDrills) setDrills(JSON.parse(savedDrills));
     if (savedHistory) setPracticeHistory(JSON.parse(savedHistory));
-
-    if (window.location.hash.startsWith("#practice-")) {
-      const hash = window.location.hash.replace("#practice-", "");
-      const [date, id] = hash.split("-");
-      setPracticeDate(date);
-      setSelectedPracticeId(parseInt(id));
-      setCurrentPage("viewPractice");
-    }
   }, []);
 
+  // Save drills and history
   useEffect(() => { localStorage.setItem("drills", JSON.stringify(drills)); }, [drills]);
   useEffect(() => { localStorage.setItem("practiceHistory", JSON.stringify(practiceHistory)); }, [practiceHistory]);
 
@@ -75,12 +70,7 @@ export default function PracticePlanner() {
 
   function savePractice(editId = null) {
     if (practice.length === 0) return;
-    const entry = {
-      id: editId || Date.now(),
-      date: practiceDate,
-      startTime,
-      drills: practice
-    };
+    const entry = { id: editId || Date.now(), date: practiceDate, startTime, drills: practice };
     const filtered = practiceHistory.filter(h => h.id !== entry.id);
     setPracticeHistory([entry, ...filtered]);
     setPractice([]);
@@ -99,8 +89,6 @@ export default function PracticePlanner() {
     setPractice(p.drills);
     setCurrentPage("createPractice");
   }
-
-  function getPracticesForDate(date) { return practiceHistory.filter(p => p.date === date); }
 
   function format12Hour(hour24, minute) {
     let suffix = hour24 >= 12 ? "PM" : "AM";
@@ -129,7 +117,7 @@ export default function PracticePlanner() {
   // --- Styles ---
   const pageStyle = { 
     padding: "20px", maxWidth: "800px", margin: "auto", fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", 
-    minHeight: "100vh", backgroundColor: COLORS.panthersBlue, color: COLORS.white,
+    minHeight: "100vh", backgroundColor: COLORS.primary, color: COLORS.white,
     backgroundImage: "url('https://i.ibb.co/CPHkR4n/baseball-diamond-pattern.png')",
     backgroundSize: "cover"
   };
@@ -148,7 +136,7 @@ export default function PracticePlanner() {
   const thTdStyle = { border: "1px solid #ddd", padding: "10px", verticalAlign: "top" };
   const drillTitleStyle = { fontWeight: "800", fontSize: "1.2em", marginBottom: "5px" };
   const drillNoteStyle = { margin: "3px 0", paddingLeft:"12px", listStyleType:"disc" };
-  const videoLinkStyle = { color: COLORS.panthersBlue, textDecoration: "underline", fontWeight:"600" };
+  const videoLinkStyle = { color: COLORS.primary, textDecoration: "underline", fontWeight:"600" };
 
   // --- Pages ---
   if(currentPage === "home") {
@@ -162,9 +150,6 @@ export default function PracticePlanner() {
       </div>
     );
   }
-
-  // --- other pages follow same pattern with cards, icons, gradient backgrounds, color-coded drill types, shadows, hover effects etc ---
-  // For brevity, these pages will also include FontAwesome icons per drill, drill category colored badges, subtle shadows, and mobile-friendly tables.
 
   return <div style={pageStyle}>Loading...</div>;
 }
