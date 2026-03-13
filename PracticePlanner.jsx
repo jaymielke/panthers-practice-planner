@@ -16,6 +16,7 @@ export default function PracticePlanner() {
   const [practiceDate, setPracticeDate] = useState(todayString);
   const [selectedPracticeId, setSelectedPracticeId] = useState(null);
   const [practice, setPractice] = useState([]);
+  const [startTime, setStartTime] = useState("17:00"); // default 5pm
 
   // Add Drill form state
   const [drillName, setDrillName] = useState("");
@@ -65,9 +66,14 @@ export default function PracticePlanner() {
     else if (practice.length < 3) setPractice([...practice, drill]);
   }
 
-  function savePractice() {
+  function savePractice(editId = null) {
     if (practice.length === 0) return;
-    const entry = { id: Date.now(), date: practiceDate, drills: practice };
+    const entry = {
+      id: editId || Date.now(),
+      date: practiceDate,
+      startTime,
+      drills: practice
+    };
     const filtered = practiceHistory.filter(h => h.id !== entry.id);
     setPracticeHistory([entry, ...filtered]);
     setPractice([]);
@@ -78,28 +84,58 @@ export default function PracticePlanner() {
     setPracticeHistory(practiceHistory.filter(p => p.id !== id));
   }
 
+  function editPractice(id) {
+    const p = practiceHistory.find(p => p.id === id);
+    if (!p) return;
+    setPracticeDate(p.date);
+    setStartTime(p.startTime);
+    setPractice(p.drills);
+    setCurrentPage("createPractice");
+  }
+
   function getPracticesForDate(date) { return practiceHistory.filter(p => p.date === date); }
-  function viewPractice(practiceId) { setSelectedPracticeId(practiceId); setCurrentPage("viewPractice"); }
+
+  // ---------- Helper: Generate schedule ----------
+  function generateSchedule(start, drills) {
+    // start = "HH:MM"
+    const [hourStr, minStr] = start.split(":");
+    let hour = parseInt(hourStr);
+    let min = parseInt(minStr);
+    const schedule = [];
+    function formatTime(h,m) { return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`; }
+
+    // 15 min warmup
+    schedule.push({ start: formatTime(hour,min), end: formatTime(hour, min+15), title: "Dynamic Warmup" });
+    min += 15;
+    // 3 drills in 20 min increments
+    drills.forEach(d => {
+      let endMin = min + 20;
+      let endHour = hour;
+      if (endMin >= 60) { endHour += Math.floor(endMin/60); endMin = endMin%60; }
+      schedule.push({ start: formatTime(hour,min), end: formatTime(endHour,endMin), title: d.name });
+      min += 20;
+      if (min >= 60) { hour += Math.floor(min/60); min = min%60; }
+    });
+    // Cool down last 15 min
+    let endHour = hour; let endMin = min + 15;
+    if (endMin >= 60) { endHour += Math.floor(endMin/60); endMin = endMin%60; }
+    schedule.push({ start: formatTime(hour,min), end: formatTime(endHour,endMin), title: "Cool Down" });
+    return schedule;
+  }
+
+  // ---------- Styles ----------
+  const pageStyle = { padding: "20px", maxWidth: "700px", margin: "auto", fontFamily: "Arial", minHeight: "100vh", backgroundColor: COLORS.blue, color: COLORS.black };
+  const buttonStyle = { display: "block", margin: "15px auto", padding: "15px", width: "80%", borderRadius: "12px", backgroundColor: COLORS.white, color: COLORS.blue, fontSize: "18px", fontWeight: "bold", border: "none", cursor: "pointer" };
+  const cardStyle = { border: "1px solid #ccc", borderRadius: "8px", padding: "10px", marginBottom: "10px", backgroundColor: COLORS.white, color: COLORS.black };
 
   // ---------- Render Pages ----------
-  const pageStyle = { padding: "20px", maxWidth: "700px", margin: "auto", fontFamily: "Arial", minHeight: "100vh" };
-  const buttonStyle = { display: "block", margin: "15px auto", padding: "15px", width: "80%", borderRadius: "12px", backgroundColor: COLORS.white, color: COLORS.blue, fontSize: "18px", fontWeight: "bold", border: "none", cursor: "pointer" };
-  const cardStyle = { border: "1px solid #ccc", borderRadius: "8px", padding: "10px", marginBottom: "10px" };
-
   if (currentPage === "home") {
     return (
-      <div style={{ ...pageStyle, textAlign: "center", backgroundColor: COLORS.blue, color: COLORS.black }}>
+      <div style={{ ...pageStyle, textAlign: "center" }}>
         <img src="/icon-192.png" alt="Panthers Logo" style={{ width: "120px", marginBottom: "20px" }} />
         <h1 style={{ color: COLORS.white }}>Kitchener Panthers U8 Practice Planner ⚾</h1>
-
         {["Add a New Drill","Create a New Practice Plan","View a Practice Plan"].map((text, idx) => (
-          <button
-            key={idx}
-            onClick={() => setCurrentPage(text.includes("Drill")?"addDrill":text.includes("Create")?"createPractice":"viewPractice")}
-            style={buttonStyle}
-          >
-            {text}
-          </button>
+          <button key={idx} onClick={() => setCurrentPage(text.includes("Drill")?"addDrill":text.includes("Create")?"createPractice":"viewPractice")} style={buttonStyle}>{text}</button>
         ))}
       </div>
     );
@@ -117,20 +153,19 @@ export default function PracticePlanner() {
         </select>
         <br /><br />
         <input type="number" min="1" placeholder="Number of Players" value={drillPlayers} onChange={e=>setDrillPlayers(e.target.value)} style={{ width: "100%", padding: "8px" }} />
+        <small>Enter the number of players recommended for this drill. Helps when planning practice sessions.</small>
         <br /><br />
         <textarea placeholder="Drill Instructions (use line breaks for bullet points)" value={drillNotes} onChange={e=>setDrillNotes(e.target.value)} style={{ width: "100%", padding: "8px" }} />
         <br /><br />
         <input placeholder="Video link" value={drillVideo} onChange={e=>setDrillVideo(e.target.value)} style={{ width: "100%", padding: "8px" }} />
         <br /><br />
-        <button onClick={addDrill} style={{ padding: "12px 20px", borderRadius:"8px", backgroundColor: COLORS.blue, color: COLORS.white, fontWeight:"bold", border:"none" }}>Save Drill</button>
+        <button onClick={addDrill} style={{ padding: "12px 20px", borderRadius:"8px", backgroundColor: COLORS.black, color: COLORS.white, fontWeight:"bold", border:"none" }}>Save Drill</button>
 
         <h2>Existing Drills</h2>
         {drills.map(d => (
           <div key={d.id} style={cardStyle}>
             <strong>{d.name}</strong> ({d.category}) — Players Needed: {d.playersNeeded}
-            <ul>
-              {d.notes.split(/\r?\n/).map((line, i) => line.trim() !== "" && <li key={i}>{line}</li>)}
-            </ul>
+            <ul>{d.notes.split(/\r?\n/).map((line,i)=>line.trim()!=="" && <li key={i}>{line}</li>)}</ul>
             {d.video && <a href={d.video} target="_blank">Watch Video</a>}
           </div>
         ))}
@@ -142,9 +177,12 @@ export default function PracticePlanner() {
     return (
       <div style={pageStyle}>
         <button onClick={() => setCurrentPage("home")} style={{ marginBottom: "15px" }}>⬅ Home</button>
-        <h2>Create Practice Plan</h2>
+        <h2>Create / Modify Practice Plan</h2>
         <label>Date: </label>
         <input type="date" value={practiceDate} onChange={e=>setPracticeDate(e.target.value)} />
+        <br /><br />
+        <label>Start Time: </label>
+        <input type="time" value={startTime} onChange={e=>setStartTime(e.target.value)} />
         <br /><br />
         <label>Filter by Drill Type: </label>
         <select onChange={e=>setDrillCategory(e.target.value)} value={drillCategory}>
@@ -157,7 +195,7 @@ export default function PracticePlanner() {
           </div>
         ))}
         <br />
-        <button onClick={savePractice} style={{ padding: "12px 20px", borderRadius:"8px", backgroundColor: COLORS.blue, color: COLORS.white, fontWeight:"bold", border:"none" }}>Save Practice Plan</button>
+        <button onClick={()=>savePractice()} style={{ padding: "12px 20px", borderRadius:"8px", backgroundColor: COLORS.black, color: COLORS.white, fontWeight:"bold", border:"none" }}>Save Practice Plan</button>
       </div>
     );
   }
@@ -176,21 +214,16 @@ export default function PracticePlanner() {
         {practicesForDate.length===0 && <div>No practices saved for this date.</div>}
         {practicesForDate.map(p=>(
           <div key={p.id} style={{ marginBottom:"10px" }}>
-            <button onClick={()=>setSelectedPracticeId(p.id)} style={{ display:"inline-block", marginRight:"10px", padding:"5px 10px" }}>Practice at {p.date}</button>
+            <button onClick={()=>setSelectedPracticeId(p.id)} style={{ display:"inline-block", marginRight:"10px", padding:"5px 10px" }}>Practice at {p.date} {p.startTime}</button>
+            <button onClick={()=>editPractice(p.id)} style={{ display:"inline-block", marginRight:"10px", padding:"5px 10px", backgroundColor:"orange", color:"white", border:"none", borderRadius:"5px" }}>Modify</button>
             <button onClick={()=>deletePractice(p.id)} style={{ display:"inline-block", padding:"5px 10px", backgroundColor:"red", color:"white", border:"none", borderRadius:"5px" }}>Delete</button>
           </div>
         ))}
         {selectedPractice && (
           <div style={cardStyle}>
-            <h3>Practice Drills:</h3>
-            {selectedPractice.drills.map((d,idx)=>(
-              <div key={d.id}>
-                {idx+1}. {d.name} ({d.category}) — Players Needed: {d.playersNeeded}
-                <ul>
-                  {d.notes.split(/\r?\n/).map((line,i)=>line.trim()!=="" && <li key={i}>{line}</li>)}
-                </ul>
-                {d.video && <a href={d.video} target="_blank">Watch Video</a>}
-              </div>
+            <h3>Date: {selectedPractice.date} | Start Time: {selectedPractice.startTime}</h3>
+            {generateSchedule(selectedPractice.startTime, selectedPractice.drills).map((s,i)=>(
+              <div key={i}><strong>{s.start}-{s.end}</strong>: {s.title}</div>
             ))}
             <br />
             <small>Sharable link: {window.location.origin+`#practice-${selectedPractice.date}-${selectedPractice.id}`}</small>
