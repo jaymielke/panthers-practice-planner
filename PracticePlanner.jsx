@@ -16,7 +16,7 @@ export default function PracticePlanner() {
   const [practiceDate, setPracticeDate] = useState(todayString);
   const [selectedPracticeId, setSelectedPracticeId] = useState(null);
   const [practice, setPractice] = useState([]);
-  const [startTime, setStartTime] = useState("17:00"); // default 5pm
+  const [startTime, setStartTime] = useState("17:00"); // default 5:00 PM
 
   // Add Drill form state
   const [drillName, setDrillName] = useState("");
@@ -96,30 +96,27 @@ export default function PracticePlanner() {
   function getPracticesForDate(date) { return practiceHistory.filter(p => p.date === date); }
 
   // ---------- Helper: Generate schedule ----------
+  function format12Hour(hour24, minute) {
+    let suffix = hour24 >= 12 ? "PM" : "AM";
+    let hour12 = hour24 % 12 || 12;
+    return `${hour12}:${String(minute).padStart(2,"0")} ${suffix}`;
+  }
+
   function generateSchedule(start, drills) {
-    // start = "HH:MM"
     const [hourStr, minStr] = start.split(":");
     let hour = parseInt(hourStr);
     let min = parseInt(minStr);
     const schedule = [];
-    function formatTime(h,m) { return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`; }
-
-    // 15 min warmup
-    schedule.push({ start: formatTime(hour,min), end: formatTime(hour, min+15), title: "Dynamic Warmup" });
-    min += 15;
-    // 3 drills in 20 min increments
-    drills.forEach(d => {
-      let endMin = min + 20;
-      let endHour = hour;
-      if (endMin >= 60) { endHour += Math.floor(endMin/60); endMin = endMin%60; }
-      schedule.push({ start: formatTime(hour,min), end: formatTime(endHour,endMin), title: d.name });
-      min += 20;
-      if (min >= 60) { hour += Math.floor(min/60); min = min%60; }
-    });
-    // Cool down last 15 min
-    let endHour = hour; let endMin = min + 15;
-    if (endMin >= 60) { endHour += Math.floor(endMin/60); endMin = endMin%60; }
-    schedule.push({ start: formatTime(hour,min), end: formatTime(endHour,endMin), title: "Cool Down" });
+    function addBlock(duration, title) {
+      let endHour = hour + Math.floor((min + duration)/60);
+      let endMin = (min + duration)%60;
+      schedule.push({ start: format12Hour(hour,min), end: format12Hour(endHour,endMin), title });
+      hour = endHour;
+      min = endMin;
+    }
+    addBlock(15, "Dynamic Warmup");
+    drills.forEach(d => addBlock(20, d.name));
+    addBlock(15, "Cool Down");
     return schedule;
   }
 
@@ -127,6 +124,11 @@ export default function PracticePlanner() {
   const pageStyle = { padding: "20px", maxWidth: "700px", margin: "auto", fontFamily: "Arial", minHeight: "100vh", backgroundColor: COLORS.blue, color: COLORS.black };
   const buttonStyle = { display: "block", margin: "15px auto", padding: "15px", width: "80%", borderRadius: "12px", backgroundColor: COLORS.white, color: COLORS.blue, fontSize: "18px", fontWeight: "bold", border: "none", cursor: "pointer" };
   const cardStyle = { border: "1px solid #ccc", borderRadius: "8px", padding: "10px", marginBottom: "10px", backgroundColor: COLORS.white, color: COLORS.black };
+  const tableStyle = { width: "100%", borderCollapse: "collapse" };
+  const thTdStyle = { border: "1px solid #ccc", padding: "10px", verticalAlign: "top" };
+  const drillTitleStyle = { fontWeight: "bold", fontSize: "1.1em", marginBottom: "5px" };
+  const drillNoteStyle = { margin: "2px 0" };
+  const videoLinkStyle = { color: COLORS.blue, textDecoration: "underline" };
 
   // ---------- Render Pages ----------
   if (currentPage === "home") {
@@ -152,7 +154,9 @@ export default function PracticePlanner() {
           {categories.map(c=><option key={c}>{c}</option>)}
         </select>
         <br /><br />
-        <input type="number" min="1" placeholder="Number of Players" value={drillPlayers} onChange={e=>setDrillPlayers(e.target.value)} style={{ width: "100%", padding: "8px" }} />
+        <select value={drillPlayers} onChange={e=>setDrillPlayers(e.target.value)} style={{ width: "100%", padding: "8px" }}>
+          {[...Array(15)].map((_,i)=><option key={i+1} value={i+1}>{i+1}</option>)}
+        </select>
         <small>Enter the number of players recommended for this drill. Helps when planning practice sessions.</small>
         <br /><br />
         <textarea placeholder="Drill Instructions (use line breaks for bullet points)" value={drillNotes} onChange={e=>setDrillNotes(e.target.value)} style={{ width: "100%", padding: "8px" }} />
@@ -214,17 +218,33 @@ export default function PracticePlanner() {
         {practicesForDate.length===0 && <div>No practices saved for this date.</div>}
         {practicesForDate.map(p=>(
           <div key={p.id} style={{ marginBottom:"10px" }}>
-            <button onClick={()=>setSelectedPracticeId(p.id)} style={{ display:"inline-block", marginRight:"10px", padding:"5px 10px" }}>Practice at {p.date} {p.startTime}</button>
+            <button onClick={()=>setSelectedPracticeId(p.id)} style={{ display:"inline-block", marginRight:"10px", padding:"5px 10px" }}>Practice at {p.date} {format12Hour(parseInt(p.startTime.split(":")[0]), parseInt(p.startTime.split(":")[1]))}</button>
             <button onClick={()=>editPractice(p.id)} style={{ display:"inline-block", marginRight:"10px", padding:"5px 10px", backgroundColor:"orange", color:"white", border:"none", borderRadius:"5px" }}>Modify</button>
             <button onClick={()=>deletePractice(p.id)} style={{ display:"inline-block", padding:"5px 10px", backgroundColor:"red", color:"white", border:"none", borderRadius:"5px" }}>Delete</button>
           </div>
         ))}
+
         {selectedPractice && (
           <div style={cardStyle}>
-            <h3>Date: {selectedPractice.date} | Start Time: {selectedPractice.startTime}</h3>
-            {generateSchedule(selectedPractice.startTime, selectedPractice.drills).map((s,i)=>(
-              <div key={i}><strong>{s.start}-{s.end}</strong>: {s.title}</div>
-            ))}
+            <h3>Date: {selectedPractice.date} | Start Time: {format12Hour(parseInt(selectedPractice.startTime.split(":")[0]), parseInt(selectedPractice.startTime.split(":")[1]))}</h3>
+            <table style={tableStyle}>
+              <tbody>
+                {generateSchedule(selectedPractice.startTime, selectedPractice.drills).map((s,i)=> {
+                  const drill = selectedPractice.drills.find(d=>d.name===s.title);
+                  return (
+                    <tr key={i}>
+                      <td style={thTdStyle}><strong>{s.start} - {s.end}</strong></td>
+                      <td style={thTdStyle}>
+                        <div style={drillTitleStyle}>{s.title}</div>
+                        {drill && drill.notes && <ul>{drill.notes.split(/\r?\n/).map((line,j)=><li key={j} style={drillNoteStyle}>{line}</li>)}</ul>}
+                        {drill && drill.video && <a href={drill.video} target="_blank" style={videoLinkStyle}>Watch Video</a>}
+                        {(s.title==="Dynamic Warmup" || s.title==="Cool Down") && <em>{s.title}</em>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
             <br />
             <small>Sharable link: {window.location.origin+`#practice-${selectedPractice.date}-${selectedPractice.id}`}</small>
           </div>
