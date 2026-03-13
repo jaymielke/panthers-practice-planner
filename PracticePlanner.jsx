@@ -1,32 +1,40 @@
 import React, { useState, useEffect } from "react";
 
 export default function PracticePlanner() {
-
   const today = new Date();
   const todayString = today.toISOString().split("T")[0];
 
-  const [monthOffset, setMonthOffset] = useState(0);
-
+  // ---------- State ----------
+  const [currentPage, setCurrentPage] = useState("home"); // home | addDrill | createPractice | viewPractice
   const [drills, setDrills] = useState([]);
-  const [practice, setPractice] = useState([]);
-  const [history, setHistory] = useState([]);
-
-  const [selectedDate, setSelectedDate] = useState(null);
+  const [practiceHistory, setPracticeHistory] = useState([]);
   const [practiceDate, setPracticeDate] = useState(todayString);
+  const [selectedPracticeId, setSelectedPracticeId] = useState(null);
+  const [practice, setPractice] = useState([]);
 
-  const [name, setName] = useState("");
-  const [notes, setNotes] = useState("");
-  const [video, setVideo] = useState("");
-  const [category, setCategory] = useState("Hitting");
+  // Add Drill form state
+  const [drillName, setDrillName] = useState("");
+  const [drillNotes, setDrillNotes] = useState("");
+  const [drillVideo, setDrillVideo] = useState("");
+  const [drillCategory, setDrillCategory] = useState("Hitting");
 
-  const [seconds, setSeconds] = useState(0);
+  const categories = ["Hitting", "Fielding", "Throwing", "Base Running", "Warmup"];
 
+  // ---------- Load from localStorage ----------
   useEffect(() => {
     const savedDrills = localStorage.getItem("drills");
     const savedHistory = localStorage.getItem("practiceHistory");
-
     if (savedDrills) setDrills(JSON.parse(savedDrills));
-    if (savedHistory) setHistory(JSON.parse(savedHistory));
+    if (savedHistory) setPracticeHistory(JSON.parse(savedHistory));
+
+    // Check URL hash for sharable practice
+    if (window.location.hash.startsWith("#practice-")) {
+      const hash = window.location.hash.replace("#practice-", "");
+      const [date, id] = hash.split("-");
+      setPracticeDate(date);
+      setSelectedPracticeId(parseInt(id));
+      setCurrentPage("viewPractice");
+    }
   }, []);
 
   useEffect(() => {
@@ -34,35 +42,23 @@ export default function PracticePlanner() {
   }, [drills]);
 
   useEffect(() => {
-    localStorage.setItem("practiceHistory", JSON.stringify(history));
-  }, [history]);
+    localStorage.setItem("practiceHistory", JSON.stringify(practiceHistory));
+  }, [practiceHistory]);
 
-  useEffect(() => {
-    if (seconds <= 0) return;
-
-    const interval = setInterval(() => {
-      setSeconds((s) => s - 1);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [seconds]);
-
+  // ---------- Functions ----------
   function addDrill() {
-    if (!name) return;
-
+    if (!drillName) return;
     const newDrill = {
       id: Date.now(),
-      name,
-      notes,
-      video,
-      category
+      name: drillName,
+      notes: drillNotes,
+      video: drillVideo,
+      category: drillCategory,
     };
-
     setDrills([...drills, newDrill]);
-
-    setName("");
-    setNotes("");
-    setVideo("");
+    setDrillName("");
+    setDrillNotes("");
+    setDrillVideo("");
   }
 
   function togglePractice(drill) {
@@ -73,225 +69,142 @@ export default function PracticePlanner() {
     }
   }
 
-  function clearPractice() {
-    setPractice([]);
-  }
-
   function savePractice() {
     if (practice.length === 0) return;
-
     const entry = {
       id: Date.now(),
       date: practiceDate,
-      drills: practice
+      drills: practice,
     };
-
-    const filtered = history.filter((h) => h.date !== practiceDate);
-
-    setHistory([entry, ...filtered]);
+    const filtered = practiceHistory.filter((h) => h.id !== entry.id);
+    setPracticeHistory([entry, ...filtered]);
     setPractice([]);
   }
 
-  function copyPractice(dateString) {
-    const existing = history.find((h) => h.date === dateString);
-
-    if (!existing) return;
-
-    setPractice(existing.drills);
-    setPracticeDate(todayString);
+  function getPracticesForDate(date) {
+    return practiceHistory.filter((p) => p.date === date);
   }
 
-  function startTimer(minutes) {
-    setSeconds(minutes * 60);
+  function viewPractice(practiceId) {
+    setSelectedPracticeId(practiceId);
+    setCurrentPage("viewPractice");
   }
 
-  function formatTime(sec) {
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-
-    return `${m}:${s.toString().padStart(2, "0")}`;
-  }
-
-  const categories = ["Hitting", "Fielding", "Throwing", "Base Running", "Warmup"];
-
-  const calendarDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
-  const year = calendarDate.getFullYear();
-  const month = calendarDate.getMonth();
-
-  const firstDay = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-  const calendarDays = [];
-
-  for (let i = 0; i < firstDay; i++) calendarDays.push(null);
-  for (let d = 1; d <= daysInMonth; d++) calendarDays.push(d);
-
-  function getPracticeForDate(dateString) {
-    return history.find((p) => p.date === dateString);
-  }
-
-  function planForDate(dateString) {
-    setPracticeDate(dateString);
-    setSelectedDate(dateString);
-    setPractice([]);
-  }
-
-  const drillUsage = {};
-
-  history.forEach((p) => {
-    p.drills.forEach((d) => {
-      drillUsage[d.name] = (drillUsage[d.name] || 0) + 1;
-    });
-  });
-
-  const drillStats = drills.map((d) => ({
-    name: d.name,
-    count: drillUsage[d.name] || 0
-  }));
-
-  const monthName = calendarDate.toLocaleString("default", { month: "long" });
-
-  return (
-    <div style={{padding:"20px",maxWidth:"700px",margin:"auto",fontFamily:"Arial"}}>
-
-      <h1>Kitchener Panthers U8 Practice Planner ⚾</h1>
-
-      <h2>Add Drill</h2>
-
-      <input placeholder="Drill name" value={name} onChange={(e)=>setName(e.target.value)} />
-      <br/><br/>
-
-      <select value={category} onChange={(e)=>setCategory(e.target.value)}>
-        {categories.map(c=>(
-          <option key={c}>{c}</option>
-        ))}
-      </select>
-
-      <br/><br/>
-
-      <textarea
-        placeholder="Drill instructions"
-        value={notes}
-        onChange={(e)=>setNotes(e.target.value)}
-      />
-
-      <br/><br/>
-
-      <input
-        placeholder="Video link"
-        value={video}
-        onChange={(e)=>setVideo(e.target.value)}
-      />
-
-      <br/><br/>
-
-      <button onClick={addDrill}>Save Drill</button>
-
-      <h2>Drill Library</h2>
-
-      {drills.map(drill=>(
-        <div key={drill.id} style={{border:"1px solid #ccc",padding:"10px",marginBottom:"10px"}}>
-          <strong>{drill.name}</strong> ({drill.category})
-
-          <div>{drill.notes}</div>
-
-          {drill.video && (
-            <div>
-              <a href={drill.video} target="_blank">Watch Video</a>
-            </div>
-          )}
-
-          <button onClick={()=>togglePractice(drill)}>
-            {practice.find(d=>d.id===drill.id) ? "Remove from Practice":"Add to Practice"}
-          </button>
-        </div>
-      ))}
-
-      <h2>Practice Builder</h2>
-
-      <div>Planning Practice For: {practiceDate}</div>
-
-      {practice.map((drill,index)=>(
-        <div key={drill.id}>
-          {index+1}. {drill.name}
-        </div>
-      ))}
-
-      <br/>
-
-      <button onClick={()=>startTimer(10)}>Start 10 min Drill</button>
-      <button onClick={clearPractice}>Clear</button>
-      <button onClick={savePractice}>Save Practice</button>
-
-      {seconds>0 && (
-        <h2>{formatTime(seconds)}</h2>
-      )}
-
-      <h2>Practice Calendar</h2>
-
-      <button onClick={()=>setMonthOffset(monthOffset-1)}>Previous</button>
-      <button onClick={()=>setMonthOffset(monthOffset+1)}>Next</button>
-
-      <div>{monthName} {year}</div>
-
-      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:"5px"}}>
-
-        {calendarDays.map((day,i)=>{
-
-          if(!day) return <div key={i}></div>;
-
-          const dateString = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-          const practiceEntry = getPracticeForDate(dateString);
-
-          return (
-            <button
-              key={i}
-              style={{padding:"10px",background:practiceEntry?"lightgreen":""}}
-              onClick={()=>setSelectedDate(dateString)}
-            >
-              {day}
-            </button>
-          );
-        })}
-
+  // ---------- Render Pages ----------
+  if (currentPage === "home") {
+    return (
+      <div style={{ padding: "20px", maxWidth: "700px", margin: "auto", fontFamily: "Arial" }}>
+        <h1>Kitchener Panthers U8 Practice Planner ⚾</h1>
+        <button style={{ display: "block", margin: "10px 0", padding: "15px" }} onClick={() => setCurrentPage("addDrill")}>
+          Add a New Drill
+        </button>
+        <button style={{ display: "block", margin: "10px 0", padding: "15px" }} onClick={() => setCurrentPage("createPractice")}>
+          Create a New Practice Plan
+        </button>
+        <button style={{ display: "block", margin: "10px 0", padding: "15px" }} onClick={() => setCurrentPage("viewPractice")}>
+          View a Practice Plan
+        </button>
       </div>
+    );
+  }
 
-      {selectedDate && (
-        <div>
+  // ---------- Add Drill Page ----------
+  if (currentPage === "addDrill") {
+    return (
+      <div style={{ padding: "20px", maxWidth: "700px", margin: "auto", fontFamily: "Arial" }}>
+        <button onClick={() => setCurrentPage("home")}>⬅ Home</button>
+        <h2>Add Drill</h2>
+        <input placeholder="Drill Name" value={drillName} onChange={(e) => setDrillName(e.target.value)} />
+        <br /><br />
+        <select value={drillCategory} onChange={(e) => setDrillCategory(e.target.value)}>
+          {categories.map((c) => (<option key={c}>{c}</option>))}
+        </select>
+        <br /><br />
+        <textarea placeholder="Drill Instructions" value={drillNotes} onChange={(e) => setDrillNotes(e.target.value)} />
+        <br /><br />
+        <input placeholder="Video link" value={drillVideo} onChange={(e) => setDrillVideo(e.target.value)} />
+        <br /><br />
+        <button onClick={addDrill}>Save Drill</button>
 
-          <h3>{selectedDate}</h3>
+        <h2>Existing Drills</h2>
+        {drills.map((d) => (
+          <div key={d.id} style={{ border: "1px solid #ccc", padding: "10px", marginBottom: "10px" }}>
+            <strong>{d.name}</strong> ({d.category})
+            <div>{d.notes}</div>
+            {d.video && <a href={d.video} target="_blank">Watch Video</a>}
+          </div>
+        ))}
+      </div>
+    );
+  }
 
-          {getPracticeForDate(selectedDate) ? (
-            <ul>
-              {getPracticeForDate(selectedDate).drills.map(d=>(
-                <li key={d.id}>{d.name}</li>
-              ))}
-            </ul>
-          ) : (
-            <div>No practice saved</div>
-          )}
+  // ---------- Create Practice Page ----------
+  if (currentPage === "createPractice") {
+    return (
+      <div style={{ padding: "20px", maxWidth: "700px", margin: "auto", fontFamily: "Arial" }}>
+        <button onClick={() => setCurrentPage("home")}>⬅ Home</button>
+        <h2>Create Practice Plan</h2>
+        <label>Date: </label>
+        <input type="date" value={practiceDate} onChange={(e) => setPracticeDate(e.target.value)} />
+        <br /><br />
 
-          <button onClick={()=>planForDate(selectedDate)}>
-            Plan Practice For This Date
+        <label>Filter by Drill Type: </label>
+        <select onChange={(e) => setDrillCategory(e.target.value)} value={drillCategory}>
+          {categories.map((c) => (<option key={c}>{c}</option>))}
+        </select>
+
+        <h3>Select up to 3 drills:</h3>
+        {drills.filter(d => d.category === drillCategory).map((d) => (
+          <div key={d.id}>
+            <input type="checkbox" checked={!!practice.find(p => p.id === d.id)} onChange={() => togglePractice(d)} />
+            {d.name}
+          </div>
+        ))}
+
+        <br />
+        <button onClick={savePractice}>Save Practice Plan</button>
+      </div>
+    );
+  }
+
+  // ---------- View Practice Page ----------
+  if (currentPage === "viewPractice") {
+    const practicesForDate = getPracticesForDate(practiceDate);
+    const selectedPractice = practicesForDate.find(p => p.id === selectedPracticeId) || practicesForDate[0];
+
+    return (
+      <div style={{ padding: "20px", maxWidth: "700px", margin: "auto", fontFamily: "Arial" }}>
+        <button onClick={() => setCurrentPage("home")}>⬅ Home</button>
+        <h2>View Practice Plan</h2>
+        <label>Select Date: </label>
+        <input type="date" value={practiceDate} onChange={(e) => setPracticeDate(e.target.value)} />
+        <br /><br />
+
+        {practicesForDate.length === 0 && <div>No practices saved for this date.</div>}
+
+        {practicesForDate.map((p) => (
+          <button key={p.id} onClick={() => setSelectedPracticeId(p.id)} style={{ display: "block", margin: "5px 0" }}>
+            Practice at {p.date}
           </button>
+        ))}
 
-          {getPracticeForDate(selectedDate) && (
-            <button onClick={()=>copyPractice(selectedDate)}>
-              Copy Practice
-            </button>
-          )}
+        {selectedPractice && (
+          <div style={{ marginTop: "20px", padding: "10px", border: "1px solid #ccc" }}>
+            <h3>Practice Drills:</h3>
+            {selectedPractice.drills.map((d, idx) => (
+              <div key={d.id}>
+                {idx + 1}. {d.name} ({d.category})
+                <div>{d.notes}</div>
+                {d.video && <a href={d.video} target="_blank">Watch Video</a>}
+              </div>
+            ))}
+            <br />
+            <small>Sharable link: {window.location.origin + `#practice-${selectedPractice.date}-${selectedPractice.id}`}</small>
+          </div>
+        )}
+      </div>
+    );
+  }
 
-        </div>
-      )}
-
-      <h2>Season Drill Tracker</h2>
-
-      {drillStats.sort((a,b)=>a.count-b.count).map((d,i)=>(
-        <div key={i}>
-          {d.name} — {d.count} uses
-        </div>
-      ))}
-
-    </div>
-  );
+  return null;
 }
