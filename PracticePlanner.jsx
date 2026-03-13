@@ -5,14 +5,6 @@ const COLORS = {
   card: "#f7f9fc"
 };
 
-const categoryIcons = {
-  Hitting: "fa-baseball-bat-ball",
-  Fielding: "fa-baseball",
-  Throwing: "fa-hand",
-  "Base Running": "fa-person-running",
-  Warmup: "fa-fire"
-};
-
 export default function PracticePlanner() {
 
   const today = new Date().toISOString().split("T")[0];
@@ -35,11 +27,17 @@ export default function PracticePlanner() {
 
   useEffect(()=>{
 
-    const savedDrills=localStorage.getItem("drills");
-    const savedPractice=localStorage.getItem("practiceHistory");
+    try{
+      const savedDrills=localStorage.getItem("drills");
+      const savedPractice=localStorage.getItem("practiceHistory");
 
-    if(savedDrills) setDrills(JSON.parse(savedDrills));
-    if(savedPractice) setPracticeHistory(JSON.parse(savedPractice));
+      if(savedDrills) setDrills(JSON.parse(savedDrills));
+      if(savedPractice) setPracticeHistory(JSON.parse(savedPractice));
+    }catch(e){
+      console.log("localStorage reset");
+      localStorage.removeItem("drills");
+      localStorage.removeItem("practiceHistory");
+    }
 
   },[]);
 
@@ -73,7 +71,7 @@ export default function PracticePlanner() {
 
   function deleteDrill(id){
 
-    if(!confirm("Delete this drill?")) return;
+    if(!window.confirm("Delete this drill?")) return;
 
     setDrills(drills.filter(d=>d.id!==id));
   }
@@ -115,7 +113,7 @@ export default function PracticePlanner() {
 
   function deletePractice(id){
 
-    if(!confirm("Delete practice plan?")) return;
+    if(!window.confirm("Delete practice plan?")) return;
 
     setPracticeHistory(practiceHistory.filter(p=>p.id!==id));
   }
@@ -129,6 +127,8 @@ export default function PracticePlanner() {
   }
 
   function buildSchedule(start,drills){
+
+    const safeDrills = drills || [];
 
     const [h,m]=start.split(":").map(Number);
 
@@ -153,7 +153,11 @@ export default function PracticePlanner() {
     }
 
     add(15,"Dynamic Warmup");
-    drills.forEach(d=>add(20,d.name));
+
+    safeDrills.forEach(d=>{
+      add(20,d.name || "Drill");
+    });
+
     add(15,"Cool Down");
 
     return blocks;
@@ -297,12 +301,12 @@ export default function PracticePlanner() {
         <div>{d.category} • {d.players} players</div>
 
         <ul>
-        {d.notes.split("\n").map((n,i)=>
+        {(d.notes || "").split("\n").map((n,i)=>
         <li key={i}>{n}</li>)}
         </ul>
 
         {d.video && (
-        <a href={d.video} target="_blank">
+        <a href={d.video} target="_blank" rel="noreferrer">
         Watch Video
         </a>
         )}
@@ -373,17 +377,19 @@ export default function PracticePlanner() {
 
       <h2>Practice Plans</h2>
 
+      {practiceHistory.length===0 && (
+        <div>No practices saved yet.</div>
+      )}
+
       {practiceHistory.map(p=>{
 
-        const schedule=buildSchedule(p.start,p.drills);
+        const schedule=buildSchedule(p.start || "17:00",p.drills);
 
         return(
 
           <div key={p.id} style={card}>
 
-          <strong>
-          {new Date(p.date).toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})}
-          </strong>
+          <strong>{p.date}</strong>
 
           <table style={table}>
           <tbody>
