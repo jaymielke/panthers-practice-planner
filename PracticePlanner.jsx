@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 
 const COLORS = {
-  blue: "#5f8db5",
+  panthersBlue: "#5f8db5",
   black: "#000000",
   white: "#FFFFFF",
+  lightGray: "#f4f4f4",
+  darkGray: "#333333",
 };
 
 export default function PracticePlanner() {
@@ -44,6 +46,7 @@ export default function PracticePlanner() {
   useEffect(() => { localStorage.setItem("drills", JSON.stringify(drills)); }, [drills]);
   useEffect(() => { localStorage.setItem("practiceHistory", JSON.stringify(practiceHistory)); }, [practiceHistory]);
 
+  // --- Helper Functions ---
   function addDrill() {
     if (!drillName) return;
     const newDrill = {
@@ -116,66 +119,73 @@ export default function PracticePlanner() {
     return schedule;
   }
 
-  const pageStyle = { padding: "20px", maxWidth: "700px", margin: "auto", fontFamily: "Arial", minHeight: "100vh", backgroundColor: COLORS.blue, color: COLORS.black };
-  const buttonStyle = { display: "block", margin: "15px auto", padding: "15px", width: "80%", borderRadius: "12px", backgroundColor: COLORS.white, color: COLORS.blue, fontSize: "18px", fontWeight: "bold", border: "none", cursor: "pointer" };
-  const cardStyle = { border: "1px solid #ccc", borderRadius: "8px", padding: "10px", marginBottom: "10px", backgroundColor: COLORS.white, color: COLORS.black };
-  const tableStyle = { width: "100%", borderCollapse: "collapse" };
-  const thTdStyle = { border: "1px solid #ccc", padding: "10px", verticalAlign: "top" };
-  const drillTitleStyle = { fontWeight: "bold", fontSize: "1.1em", marginBottom: "5px" };
+  // --- Styles ---
+  const pageStyle = { padding: "20px", maxWidth: "700px", margin: "auto", fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", minHeight: "100vh", backgroundColor: COLORS.panthersBlue, color: COLORS.white };
+  const buttonStyle = { display: "block", margin: "20px auto", padding: "16px", width: "85%", borderRadius: "15px", background: "linear-gradient(90deg, #FFFFFF, #f0f0f0)", color: COLORS.panthersBlue, fontSize: "20px", fontWeight: "700", border: "none", cursor: "pointer", transition: "all 0.2s" };
+  const buttonHover = { transform: "scale(1.03)", boxShadow: "0 4px 12px rgba(0,0,0,0.2)" };
+  const cardStyle = { borderRadius: "12px", padding: "15px", marginBottom: "15px", backgroundColor: COLORS.white, color: COLORS.darkGray, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" };
+  const tableStyle = { width: "100%", borderCollapse: "collapse", marginTop:"10px" };
+  const thTdStyle = { border: "1px solid #ddd", padding: "10px", verticalAlign: "top" };
+  const drillTitleStyle = { fontWeight: "700", fontSize: "1.15em", marginBottom: "5px", color: COLORS.panthersBlue };
   const drillNoteStyle = { margin: "2px 0" };
-  const videoLinkStyle = { color: COLORS.blue, textDecoration: "underline" };
+  const videoLinkStyle = { color: COLORS.panthersBlue, textDecoration: "underline" };
 
-  if (currentPage === "home") {
+  // --- Pages ---
+
+  // --- Home Page ---
+  if(currentPage === "home") {
     return (
       <div style={{ ...pageStyle, textAlign: "center" }}>
-        <img src="/icon-192.png" alt="Logo" style={{ width: "120px", marginBottom: "20px" }} />
-        <h1 style={{ color: COLORS.white }}>Practice Planner</h1>
+        <img src="/icon-192.png" alt="Logo" style={{ width: "130px", marginBottom: "25px", borderRadius:"20px" }} />
+        <h1 style={{ fontSize:"2.5em", fontWeight:"900", marginBottom:"30px" }}>Practice Planner</h1>
         {["Add a New Drill","Create a New Practice Plan","View a Practice Plan"].map((text, idx) => (
-          <button key={idx} onClick={() => setCurrentPage(text.includes("Drill")?"addDrill":text.includes("Create")?"createPractice":"viewPractice")} style={buttonStyle}>{text}</button>
+          <button key={idx} onClick={() => setCurrentPage(text.includes("Drill")?"addDrill":text.includes("Create")?"createPractice":"viewPractice")} style={{ ...buttonStyle }} onMouseOver={e=>Object.assign(e.currentTarget.style, buttonHover)} onMouseOut={e=>Object.assign(e.currentTarget.style, buttonStyle)}>{text}</button>
         ))}
       </div>
     );
   }
 
-  if (currentPage === "addDrill") {
+  // --- Add Drill Page ---
+  if(currentPage === "addDrill") {
     return (
       <div style={pageStyle}>
         <button onClick={() => setCurrentPage("home")} style={{ marginBottom: "15px" }}>⬅ Home</button>
-        <h1 style={{ color: COLORS.black, marginBottom: "20px" }}>Add Drill</h1>
-        <input placeholder="Drill Name" value={drillName} onChange={e=>setDrillName(e.target.value)} style={{ width: "100%", padding: "8px" }} />
+        <h1 style={{ marginBottom: "20px" }}>Add Drill</h1>
+        <input placeholder="Drill Name" value={drillName} onChange={e=>setDrillName(e.target.value)} style={{ width:"100%", padding:"10px", borderRadius:"8px" }} />
         <br /><br />
-        <select value={drillCategory} onChange={e=>setDrillCategory(e.target.value)} style={{ width: "100%", padding: "8px" }}>
+        <select value={drillCategory} onChange={e=>setDrillCategory(e.target.value)} style={{ width:"100%", padding:"10px", borderRadius:"8px" }}>
           {categories.map(c=><option key={c}>{c}</option>)}
         </select>
         <br /><br />
-        <select value={drillPlayers} onChange={e=>setDrillPlayers(e.target.value)} style={{ width: "100%", padding: "8px" }}>
+        <select value={drillPlayers} onChange={e=>setDrillPlayers(e.target.value)} style={{ width:"100%", padding:"10px", borderRadius:"8px" }}>
           {[...Array(15)].map((_,i)=><option key={i+1} value={i+1}>{i+1}</option>)}
         </select>
-        <small>Enter the number of players recommended for this drill. Helps when planning practice sessions.</small>
+        <small>Number of players recommended for this drill</small>
         <br /><br />
-        <textarea placeholder="Drill Instructions (use line breaks for bullet points)" value={drillNotes} onChange={e=>setDrillNotes(e.target.value)} style={{ width: "100%", padding: "8px" }} />
+        <textarea placeholder="Drill Instructions (bullet points)" value={drillNotes} onChange={e=>setDrillNotes(e.target.value)} style={{ width:"100%", padding:"10px", borderRadius:"8px", minHeight:"80px" }} />
         <br /><br />
-        <input placeholder="Video link" value={drillVideo} onChange={e=>setDrillVideo(e.target.value)} style={{ width: "100%", padding: "8px" }} />
+        <input placeholder="Video link" value={drillVideo} onChange={e=>setDrillVideo(e.target.value)} style={{ width:"100%", padding:"10px", borderRadius:"8px" }} />
         <br /><br />
-        <button onClick={addDrill} style={{ padding: "12px 20px", borderRadius:"8px", backgroundColor: COLORS.black, color: COLORS.white, fontWeight:"bold", border:"none" }}>Save Drill</button>
+        <button onClick={addDrill} style={{ padding:"14px 25px", borderRadius:"12px", backgroundColor: COLORS.darkGray, color: COLORS.white, fontWeight:"700", border:"none" }}>Save Drill</button>
 
-        <h1 style={{ color: COLORS.black, marginTop: "30px", marginBottom:"10px" }}>Existing Drills</h1>
+        <h2 style={{ marginTop:"30px", marginBottom:"15px" }}>Existing Drills</h2>
         {drills.map(d => (
           <div key={d.id} style={cardStyle}>
-            <strong>{d.name}</strong> ({d.category}) — Players Needed: {d.playersNeeded}
-            <ul>{d.notes.split(/\r?\n/).map((line,i)=>line.trim()!=="" && <li key={i}>{line}</li>)}</ul>
-            {d.video && <a href={d.video} target="_blank">Watch Video</a>}
+            <div style={{ fontWeight:"700", fontSize:"1.1em", color: COLORS.panthersBlue }}>{d.name} ({d.category}) - {d.playersNeeded} Players</div>
+            <ul>{d.notes.split(/\r?\n/).map((line,i)=>line.trim()!=="" && <li key={i} style={drillNoteStyle}>{line}</li>)}</ul>
+            {d.video && <a href={d.video} target="_blank" style={videoLinkStyle}>Watch Video</a>}
           </div>
         ))}
       </div>
     );
   }
 
-  if (currentPage === "createPractice") {
+  // --- Create Practice Page ---
+  if(currentPage === "createPractice") {
     return (
       <div style={pageStyle}>
         <button onClick={() => setCurrentPage("home")} style={{ marginBottom: "15px" }}>⬅ Home</button>
-        <h1 style={{ color: COLORS.black, marginBottom: "20px" }}>Create Practice Plan</h1>
+        <h1 style={{ marginBottom:"20px" }}>Create Practice Plan</h1>
         <label>Date: </label>
         <input type="date" value={practiceDate} onChange={e=>setPracticeDate(e.target.value)} />
         <br /><br />
@@ -193,26 +203,27 @@ export default function PracticePlanner() {
           </div>
         ))}
         <br />
-        <button onClick={()=>savePractice()} style={{ padding: "12px 20px", borderRadius:"8px", backgroundColor: COLORS.black, color: COLORS.white, fontWeight:"bold", border:"none" }}>Save Practice Plan</button>
+        <button onClick={()=>savePractice()} style={{ padding:"14px 25px", borderRadius:"12px", backgroundColor: COLORS.darkGray, color: COLORS.white, fontWeight:"700", border:"none" }}>Save Practice Plan</button>
       </div>
     );
   }
 
-  if (currentPage === "viewPractice") {
+  // --- View Practice Page ---
+  if(currentPage === "viewPractice") {
     const practicesForDate = getPracticesForDate(practiceDate);
     const selectedPractice = practicesForDate.find(p=>p.id===selectedPracticeId) || practicesForDate[0];
 
     return (
       <div style={pageStyle}>
         <button onClick={() => setCurrentPage("home")} style={{ marginBottom: "15px" }}>⬅ Home</button>
-        <h1 style={{ color: COLORS.black, marginBottom: "20px" }}>View Practice Plan</h1>
+        <h1 style={{ marginBottom:"20px" }}>View Practice Plan</h1>
         <label>Select Date: </label>
         <input type="date" value={practiceDate} onChange={e=>setPracticeDate(e.target.value)} />
         <br /><br />
         {practicesForDate.length===0 && <div>No practices saved for this date.</div>}
         {practicesForDate.map(p=>(
           <div key={p.id} style={{ marginBottom:"10px" }}>
-            <button onClick={()=>setSelectedPracticeId(p.id)} style={{ display:"inline-block", marginRight:"10px", padding:"5px 10px" }}>Practice at {p.date} {format12Hour(parseInt(p.startTime.split(":")[0]), parseInt(p.startTime.split(":")[1]))}</button>
+            <button onClick={()=>setSelectedPracticeId(p.id)} style={{ display:"inline-block", marginRight:"10px", padding:"5px 10px" }}>Practice at {new Date(p.date).toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' })} {format12Hour(parseInt(p.startTime.split(":")[0]), parseInt(p.startTime.split(":")[1]))}</button>
             <button onClick={()=>editPractice(p.id)} style={{ display:"inline-block", marginRight:"10px", padding:"5px 10px", backgroundColor:"orange", color:"white", border:"none", borderRadius:"5px" }}>Modify</button>
             <button onClick={()=>deletePractice(p.id)} style={{ display:"inline-block", padding:"5px 10px", backgroundColor:"red", color:"white", border:"none", borderRadius:"5px" }}>Delete</button>
           </div>
@@ -220,14 +231,21 @@ export default function PracticePlanner() {
 
         {selectedPractice && (
           <div style={cardStyle}>
-            <h3>Date: {selectedPractice.date} | Start Time: {format12Hour(parseInt(selectedPractice.startTime.split(":")[0]), parseInt(selectedPractice.startTime.split(":")[1]))}</h3>
+            <h3 style={{ marginBottom:"15px" }}>
+              Date: {new Date(selectedPractice.date).toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' })} | 
+              Start Time: {format12Hour(parseInt(selectedPractice.startTime.split(":")[0]), parseInt(selectedPractice.startTime.split(":")[1]))}
+            </h3>
             <table style={tableStyle}>
               <tbody>
                 {generateSchedule(selectedPractice.startTime, selectedPractice.drills).map((s,i)=> {
                   const drill = selectedPractice.drills.find(d=>d.name===s.title);
                   return (
                     <tr key={i}>
-                      <td style={thTdStyle}><strong>{s.start} - {s.end}</strong></td>
+                      <td style={thTdStyle}>
+                        <div>{s.start}</div>
+                        <div style={{ textAlign:"center" }}>-</div>
+                        <div>{s.end}</div>
+                      </td>
                       <td style={thTdStyle}>
                         <div style={drillTitleStyle}>{s.title}</div>
                         {drill && drill.notes && <ul>{drill.notes.split(/\r?\n/).map((line,j)=><li key={j} style={drillNoteStyle}>{line}</li>)}</ul>}
