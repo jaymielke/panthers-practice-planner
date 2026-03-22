@@ -86,22 +86,26 @@ const BAT_DRILL = {
   players:0, duration:0, venue:"Both", video:"",
 };
 
-function encodePlan(plan) {
-  try {
-    const slim = {
-      d:plan.date, s:plan.start, bp:plan.battingParallel?1:0,
-      x:(plan.drills||[]).map(dr=>({n:dr.name,c:dr.category,p:dr.players,t:dr.notes||"",v:dr.video||"",du:dr.duration||20,ve:dr.venue||"Both"}))
-    };
-    return btoa(encodeURIComponent(JSON.stringify(slim))).replace(/=/g,"").replace(/\+/g,"-").replace(/\//g,"_");
-  } catch { return ""; }
+// Share URL is now just the practice date — data lives in Supabase
+function shareUrl(plan) {
+  const base = window.location.href.split("?")[0];
+  return `${base}?share=${plan.date}`;
 }
-function decodePlan(str) {
+
+// Fetch a single plan by date for the share view
+async function sbGetPlanByDate(date) {
   try {
-    const slim=JSON.parse(decodeURIComponent(atob(str.replace(/-/g,"+").replace(/_/g,"/"))));
-    return {date:slim.d,start:slim.s,battingParallel:!!slim.bp,drills:(slim.x||[]).map((dr,i)=>({id:i,name:dr.n,category:dr.c,players:dr.p,notes:dr.t,video:dr.v,duration:dr.du||20,venue:dr.ve||"Both"}))};
+    // Query all plans then filter by date in JS — simpler than PostgREST jsonb syntax
+    const res = await fetch(
+      `${SB_URL}/rest/v1/plans?select=id,data`,
+      { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } }
+    );
+    const rows = await res.json();
+    if (!Array.isArray(rows)) return null;
+    const match = rows.find(r => r.data && r.data.date === date);
+    return match ? match.data : null;
   } catch { return null; }
 }
-function shareUrl(plan){return `${window.location.href.split("?")[0]}?p=${encodePlan(plan)}`;}
 
 // ─── Supabase client (no npm needed — uses the REST API directly) ─────────────
 const SB_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -714,9 +718,30 @@ function PlayerFilter({active,onChange}){
 export default function PracticePlanner(){
   const today=new Date().toISOString().split("T")[0];
 
-  const[shared]=useState(()=>{try{const p=new URLSearchParams(window.location.search).get("p");return p?decodePlan(p):null;}catch{return null;}});
+  const[shared,setShared]=useState(null);
+  const[sharedLoading,setSharedLoading]=useState(false);
   const[dark,setDark]=useState(()=>load("pp_dark",true));
   const T=makeTheme(dark);
+
+  // Handle share links on load
+  useEffect(()=>{
+    const params=new URLSearchParams(window.location.search);
+    const shareDate=params.get("share");
+    const oldP=params.get("p");
+    if(shareDate){
+      setSharedLoading(true);
+      sbGetPlanByDate(shareDate).then(plan=>{
+        setShared(plan);
+        setSharedLoading(false);
+      });
+    } else if(oldP){
+      // backward compat: decode old base64 links
+      try{
+        const slim=JSON.parse(decodeURIComponent(atob(oldP.replace(/-/g,"+").replace(/_/g,"/"))));
+        setShared({date:slim.d,start:slim.s,battingParallel:!!slim.bp,drills:(slim.x||[]).map((dr,i)=>({id:i,name:dr.n,category:dr.c,players:dr.p,notes:dr.t,video:dr.v,duration:dr.du||20,venue:dr.ve||"Both"}))});
+      }catch{}
+    }
+  },[]);
 
   useEffect(()=>{
     let el=document.getElementById("pp-css");
@@ -773,6 +798,14 @@ export default function PracticePlanner(){
   const[createPlayerFilter,setCreatePlayerFilter]=useState("Any");
   const[expandedPicks,setExpandedPicks]=useState({});
   useEffect(()=>save("pp_recent",recentIds),[recentIds]);
+
+  if(sharedLoading) return(
+    <div style={{minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16}}>
+      <img src={LOGO} alt="Panthers" style={{width:72,height:72,objectFit:"contain",filter:"drop-shadow(0 2px 12px rgba(95,141,181,0.5))",animation:"pp-spin 2s linear infinite"}}/>
+      <div style={{fontFamily:"'Oswald',sans-serif",fontSize:16,color:T.steel,letterSpacing:1}}>Loading practice...</div>
+      <style>{`@keyframes pp-spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}`}</style>
+    </div>
+  );
 
   if(shared)return<MobileView plan={shared} T={T}/>;
 
