@@ -122,10 +122,10 @@ const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}};
 
 // Helpers
 function fmt(h,m){return `${h%12||12}:${String(m).padStart(2,"0")} ${h>=12?"PM":"AM"}`;}
-function buildSchedule(start="17:00",drills=[],warmupDrill=null,cooldownDrill=null){
+function buildSchedule(start="17:00",drills=[]){
   const[h,m]=start.split(":").map(Number);let hr=h,mn=m;const blocks=[];
   function add(mins,label,drill=null){const t=hr*60+mn+mins,eH=Math.floor(t/60)%24,eM=t%60;blocks.push({start:fmt(hr,mn),end:fmt(eH,eM),label,dur:mins,drill});hr=eH;mn=eM;}
-  add(15,"Warmup",warmupDrill);drills.forEach(d=>add(d.duration||20,d.name,d));add(15,"Cool Down",cooldownDrill);
+  add(15,"Warmup");drills.forEach(d=>add(d.duration||20,d.name,d));add(15,"Cool Down");
   return blocks;
 }
 function dateLabel(str){
@@ -371,9 +371,6 @@ body{background:${T.bg};font-family:'DM Sans',sans-serif;color:${T.text};min-hei
 .mv-notes li:last-child{border-bottom:none;}
 .mv-vid{display:inline-flex;align-items:center;gap:7px;background:${T.steelDim};border:1px solid ${T.border};border-radius:7px;padding:8px 13px;color:${T.steel};text-decoration:none;font-size:13px;font-weight:500;margin-top:10px;transition:background 0.15s;}
 .mv-vid:hover{opacity:0.8;}
-.mv-expand-btn{display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:8px;background:${T.steelDim};border:1.5px solid ${T.border};color:${T.steel};font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0;transition:all 0.15s;-webkit-tap-highlight-color:transparent;min-width:80px;justify-content:center;}
-.mv-expand-btn:hover{border-color:${T.steel};}
-.mv-expand-btn.open{background:${T.steelDim};border-color:${T.borderHi};}
 .mv-done{margin:0 0 14px;background:${T.isDark?"linear-gradient(135deg,rgba(61,186,122,0.12),rgba(26,120,74,0.18))":"rgba(26,120,74,0.08)"};border:1px solid rgba(61,186,122,0.35);border-radius:14px;padding:24px;text-align:center;}
 .mv-done-logo{width:68px;height:68px;object-fit:contain;margin-bottom:10px;}
 .mv-done-title{font-family:'Oswald',sans-serif;font-size:24px;font-weight:700;color:${T.text};}
@@ -399,7 +396,7 @@ const LOGO="/KMBA-Panthers-Logo_U8_Tier_1.png";
 
 // ─── MOBILE VIEW ──────────────────────────────────────────────────────────────
 function MobileView({plan,T}){
-  const blocks=buildSchedule(plan.start||"17:00",plan.drills||[],plan.warmupDrill||null,plan.cooldownDrill||null);
+  const blocks=buildSchedule(plan.start||"17:00",plan.drills||[]);
   const totalMins=blocks.reduce((s,b)=>s+b.dur,0);
   const hasBat=!!plan.battingParallel;
   const[started,setStarted]=useState(false);
@@ -449,20 +446,7 @@ function MobileView({plan,T}){
             return(
               <>
                 {/* Warmup full width */}
-                {(()=>{const isCur=started&&!done&&0===cur,isDone=started&&(done||0<cur),isOpen=open===0,hasDr=!!warmup.drill,c=hasDr?(CAT[warmup.drill.category]||CAT["Warmup"]):null;return(
-                  <div className={`mv-block${isCur?" current":""}${isDone?" done":""}`} style={{marginBottom:8,...(hasDr&&c?{borderLeftColor:c.border,borderLeftWidth:3}:{})}}>
-                    <div className="mv-block-hd" style={{cursor:hasDr?"pointer":"default"}} onClick={()=>hasDr&&setOpen(isOpen?null:0)}>
-                      <div className="mv-idx">{isDone?<Ico name="checkmark" size={14}/>:1}</div>
-                      <div className="mv-block-info"><div className="mv-block-name">{warmup.label}</div><div className="mv-block-time">{warmup.start} – {warmup.end}</div></div>
-                      <div style={{display:"flex",alignItems:"center",gap:8}}><div className="mv-block-dur">{warmup.dur}m</div>{hasDr&&<button className={`mv-expand-btn${isOpen?" open":""}`} onClick={e=>{e.stopPropagation();setOpen(isOpen?null:0);}}><Ico name={isOpen?"chevUp":"chevDown"} size={16}/>{isOpen?"Hide":"Details"}</button>}</div>
-                    </div>
-                    {hasDr&&isOpen&&(<div className="mv-block-detail">
-                      <div className="mv-dl"><div className="mv-chips"><CatChip cat={warmup.drill.category} small/><span className="mv-chip"><Ico name="users" size={11}/>{warmup.drill.players}p</span>{warmup.drill.venue&&warmup.drill.venue!=="Both"&&<VenueChip venue={warmup.drill.venue} small/>}</div></div>
-                      {warmup.drill.notes&&(<div className="mv-dl"><div className="mv-dl-label">Instructions</div><ul className="mv-notes">{warmup.drill.notes.split("\n").filter(Boolean).map((n,j)=><li key={j}>{n}</li>)}</ul></div>)}
-                      {warmup.drill.video&&<a href={warmup.drill.video} target="_blank" rel="noopener noreferrer" className="mv-vid"><Ico name="video" size={14}/> Watch Drill Video</a>}
-                    </div>)}
-                  </div>
-                );})()}
+                {(()=>{const isCur=started&&!done&&0===cur,isDone=started&&(done||0<cur);return(<div className={`mv-block${isCur?" current":""}${isDone?" done":""}`} style={{marginBottom:8}}><div className="mv-block-hd"><div className="mv-idx">{isDone?<Ico name="checkmark" size={14}/>:1}</div><div className="mv-block-info"><div className="mv-block-name">{warmup.label}</div><div className="mv-block-time">{warmup.start} – {warmup.end}</div></div><div className="mv-block-dur">{warmup.dur}m</div></div></div>);})()}
                 {/* Col headers */}
                 <div style={{display:"grid",gridTemplateColumns:"70fr 30fr",gap:8,marginBottom:4,padding:"0 2px"}}>
                   <div style={{fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"1px",color:T.textDim,display:"flex",alignItems:"center",gap:4}}><Ico name="dumbbell" size={10}/> Main Drills</div>
@@ -499,37 +483,17 @@ function MobileView({plan,T}){
                   </div>
                 </div>
                 {/* Cool Down full width */}
-                {(()=>{const gi=blocks.length-1,isCur=started&&!done&&gi===cur,isDone=started&&(done||gi<cur),isOpen=open===gi,hasDr=!!cooldown.drill,c=hasDr?(CAT[cooldown.drill.category]||CAT["Warmup"]):null;return(
-                  <div className={`mv-block${isCur?" current":""}${isDone?" done":""}`} style={hasDr&&c?{borderLeftColor:c.border,borderLeftWidth:3}:{}}>
-                    <div className="mv-block-hd" style={{cursor:hasDr?"pointer":"default"}} onClick={()=>hasDr&&setOpen(isOpen?null:gi)}>
-                      <div className="mv-idx">{isDone?<Ico name="checkmark" size={14}/>:gi+1}</div>
-                      <div className="mv-block-info"><div className="mv-block-name">{cooldown.label}</div><div className="mv-block-time">{cooldown.start} – {cooldown.end}</div></div>
-                      <div style={{display:"flex",alignItems:"center",gap:8}}><div className="mv-block-dur">{cooldown.dur}m</div>{hasDr&&<button className={`mv-expand-btn${isOpen?" open":""}`} onClick={e=>{e.stopPropagation();setOpen(isOpen?null:gi);}}><Ico name={isOpen?"chevUp":"chevDown"} size={16}/>{isOpen?"Hide":"Details"}</button>}</div>
-                    </div>
-                    {hasDr&&isOpen&&(<div className="mv-block-detail">
-                      <div className="mv-dl"><div className="mv-chips"><CatChip cat={cooldown.drill.category} small/><span className="mv-chip"><Ico name="users" size={11}/>{cooldown.drill.players}p</span>{cooldown.drill.venue&&cooldown.drill.venue!=="Both"&&<VenueChip venue={cooldown.drill.venue} small/>}</div></div>
-                      {cooldown.drill.notes&&(<div className="mv-dl"><div className="mv-dl-label">Instructions</div><ul className="mv-notes">{cooldown.drill.notes.split("\n").filter(Boolean).map((n,j)=><li key={j}>{n}</li>)}</ul></div>)}
-                      {cooldown.drill.video&&<a href={cooldown.drill.video} target="_blank" rel="noopener noreferrer" className="mv-vid"><Ico name="video" size={14}/> Watch Drill Video</a>}
-                    </div>)}
-                  </div>
-                );})()}
+                {(()=>{const gi=blocks.length-1,isCur=started&&!done&&gi===cur,isDone=started&&(done||gi<cur);return(<div className={`mv-block${isCur?" current":""}${isDone?" done":""}`}><div className="mv-block-hd"><div className="mv-idx">{isDone?<Ico name="checkmark" size={14}/>:gi+1}</div><div className="mv-block-info"><div className="mv-block-name">{cooldown.label}</div><div className="mv-block-time">{cooldown.start} – {cooldown.end}</div></div><div className="mv-block-dur">{cooldown.dur}m</div></div></div>);})()}
               </>
             );
           })() : blocks.map((b,i)=>{
             const isCur=started&&!done&&i===cur,isDone=started&&(done||i<cur),isOpen=open===i,hasDr=!!b.drill,c=hasDr?(CAT[b.drill.category]||CAT["Hitting"]):null;
             return(
               <div key={i} className={`mv-block${isCur?" current":""}${isDone?" done":""}`} style={hasDr&&c?{borderLeftColor:c.border,borderLeftWidth:3}:{}}>
-                <div className="mv-block-hd" style={{cursor:hasDr?"pointer":"default"}} onClick={()=>hasDr&&setOpen(isOpen?null:i)}>
+                <div className="mv-block-hd" onClick={()=>hasDr&&setOpen(isOpen?null:i)}>
                   <div className="mv-idx" style={isCur?{}:hasDr&&c?{background:c.bg,color:c.text}:{}}>{isDone?<Ico name="checkmark" size={14}/>:i+1}</div>
                   <div className="mv-block-info"><div className="mv-block-name" style={hasDr&&c&&!isCur?{color:c.text}:{}}>{b.label}</div><div className="mv-block-time">{b.start} – {b.end}</div></div>
-                  <div style={{display:"flex",alignItems:"center",gap:8}}>
-                    <div className="mv-block-dur">{b.dur}m</div>
-                    {hasDr&&(
-                      <button className={`mv-expand-btn${isOpen?" open":""}`} onClick={e=>{e.stopPropagation();setOpen(isOpen?null:i);}}>
-                        <Ico name={isOpen?"chevUp":"chevDown"} size={16}/>{isOpen?"Hide":"Details"}
-                      </button>
-                    )}
-                  </div>
+                  <div className="mv-block-dur">{b.dur}m {hasDr&&<Ico name={isOpen?"chevUp":"chevDown"} size={13}/>}</div>
                 </div>
                 {hasDr&&isOpen&&(<div className="mv-block-detail">
                   <div className="mv-dl"><div className="mv-chips"><CatChip cat={b.drill.category} small/><span className="mv-chip"><Ico name="users" size={11}/>{b.drill.players} players</span><span className="mv-chip"><Ico name="clock" size={11}/>{b.drill.duration||20}m</span>{b.drill.venue&&b.drill.venue!=="Both"&&<VenueChip venue={b.drill.venue} small/>}</div></div>
@@ -597,11 +561,9 @@ export default function PracticePlanner(){
 
   // Practice form
   const[pDate,setPDate]=useState(today);const[pTime,setPTime]=useState("17:00");const[picked,setPicked]=useState([]);const[battingParallel,setBattingParallel]=useState(false);
-  const[warmupDrill,setWarmupDrill]=useState(null);const[cooldownDrill,setCooldownDrill]=useState(null);
 
   // Edit plan
   const[editPlan,setEditPlan]=useState(null);const[ePDate,setEPDate]=useState("");const[ePTime,setEPTime]=useState("");const[ePicked,setEPicked]=useState([]);const[eBat,setEBat]=useState(false);
-  const[eWarmupDrill,setEWarmupDrill]=useState(null);const[eCooldownDrill,setECooldownDrill]=useState(null);
 
   if(sharedLoading)return(<div style={{minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16}}><img src={LOGO} alt="Panthers" style={{width:72,height:72,objectFit:"contain",filter:"drop-shadow(0 2px 12px rgba(95,141,181,0.5))",animation:"pp-spin 2s linear infinite"}}/><div style={{fontFamily:"'Oswald',sans-serif",fontSize:16,color:T.steel,letterSpacing:1}}>Loading practice...</div><style>{`@keyframes pp-spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}`}</style></div>);
   if(shared)return<MobileView plan={shared} T={T}/>;
@@ -622,17 +584,17 @@ export default function PracticePlanner(){
   function togglePick(d){setPicked(prev=>prev.find(p=>p.id===d.id)?prev.filter(p=>p.id!==d.id):prev.length>=3?(toast.show("Max 3 drills"),prev):[...prev,d]);}
   async function savePractice(){
     if(!picked.length)return toast.show("Pick at least one drill");
-    const plan={id:Date.now(),date:pDate,start:pTime,drills:picked,battingParallel,warmupDrill:warmupDrill||null,cooldownDrill:cooldownDrill||null};
+    const plan={id:Date.now(),date:pDate,start:pTime,drills:picked,battingParallel};
     setPlans(prev=>[plan,...prev]);setRecentIds(prev=>[...new Set([...picked.map(d=>d.id),...prev])].slice(0,6));
     await sbUpsert("plans",plan.id,plan);
-    setPicked([]);setPDate(today);setPTime("17:00");setBattingParallel(false);setWarmupDrill(null);setCooldownDrill(null);toast.show("Practice saved");setTab("plans");
+    setPicked([]);setPDate(today);setPTime("17:00");setBattingParallel(false);toast.show("Practice saved");setTab("plans");
   }
   async function delPlan(id){if(!window.confirm("Delete this plan?"))return;setPlans(prev=>prev.filter(p=>p.id!==id));await sbDelete("plans",id);toast.show("Deleted");}
-  function openEditPlan(p){setEditPlan(p);setEPDate(p.date);setEPTime(p.start);setEPicked([...p.drills]);setEBat(!!p.battingParallel);setEWarmupDrill(p.warmupDrill||null);setECooldownDrill(p.cooldownDrill||null);}
+  function openEditPlan(p){setEditPlan(p);setEPDate(p.date);setEPTime(p.start);setEPicked([...p.drills]);setEBat(!!p.battingParallel);}
   function toggleEPick(d){setEPicked(prev=>prev.find(p=>p.id===d.id)?prev.filter(p=>p.id!==d.id):prev.length>=3?(toast.show("Max 3 drills"),prev):[...prev,d]);}
   async function saveEditPlan(){
     if(!ePicked.length)return toast.show("Pick at least one drill");
-    const updated={...editPlan,date:ePDate,start:ePTime,drills:ePicked,battingParallel:eBat,warmupDrill:eWarmupDrill||null,cooldownDrill:eCooldownDrill||null};
+    const updated={...editPlan,date:ePDate,start:ePTime,drills:ePicked,battingParallel:eBat};
     setPlans(prev=>prev.map(p=>p.id===editPlan.id?updated:p));await sbUpsert("plans",updated.id,updated);setEditPlan(null);toast.show("Practice updated");
   }
   function copyLink(plan){const url=shareUrl(plan);navigator.clipboard.writeText(url).then(()=>toast.show("Link copied!")).catch(()=>toast.show("Copy: "+url));}
@@ -732,55 +694,7 @@ export default function PracticePlanner(){
               {fR.length===0&&fO.length===0&&<div className="empty" style={{padding:"24px 0"}}><Ico name="filter" size={28}/><p>No drills match these filters.</p></div>}
             </>);
           })()}
-          <div className="divider-label" style={{marginTop:20}}>Warmup &amp; Cool Down Drills <span style={{color:T.textDim,fontWeight:400,textTransform:"none",letterSpacing:0}}>(optional)</span></div>
-
-          {/* Warmup drill picker */}
-          <div className="card" style={{marginBottom:10}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:warmupDrill?10:0}}>
-              <div>
-                <div style={{fontFamily:"'Oswald',sans-serif",fontSize:14,fontWeight:600,color:CAT["Warmup"].text}}>Warmup Drill</div>
-                <div style={{fontSize:12,color:T.textMuted,marginTop:2}}>{warmupDrill?warmupDrill.name:"No drill selected"}</div>
-              </div>
-              <div style={{display:"flex",gap:6}}>
-                {warmupDrill&&<button className="icon-btn danger" onClick={()=>setWarmupDrill(null)}><Ico name="x" size={14}/></button>}
-                <button className="btn btn-ghost btn-sm" onClick={()=>setWarmupDrill(null===warmupDrill?"pick-warmup":null)} style={{fontSize:12}}><Ico name="plus" size={13}/> {warmupDrill?"Change":"Add"}</button>
-              </div>
-            </div>
-            {warmupDrill===null&&drills.length>0&&(
-              <div style={{maxHeight:180,overflowY:"auto"}}>
-                {drills.map(d=>{const c=CAT[d.category]||CAT["Hitting"];return(
-                  <div key={d.id} className="pick-item" style={{borderLeftColor:c.border,borderLeftWidth:3,marginBottom:6}} onClick={()=>setWarmupDrill(d)}>
-                    <div className="pick-info"><div className="pick-name" style={{fontSize:14}}>{d.name}</div><div className="pick-meta"><CatChip cat={d.category} small/><span className="dur-chip" style={{fontSize:11,padding:"2px 6px"}}>{d.duration||20}m</span></div></div>
-                  </div>
-                );})}
-              </div>
-            )}
-          </div>
-
-          {/* Cool Down drill picker */}
-          <div className="card" style={{marginBottom:10}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:cooldownDrill?10:0}}>
-              <div>
-                <div style={{fontFamily:"'Oswald',sans-serif",fontSize:14,fontWeight:600,color:CAT["Cool Down"].text}}>Cool Down Drill</div>
-                <div style={{fontSize:12,color:T.textMuted,marginTop:2}}>{cooldownDrill?cooldownDrill.name:"No drill selected"}</div>
-              </div>
-              <div style={{display:"flex",gap:6}}>
-                {cooldownDrill&&<button className="icon-btn danger" onClick={()=>setCooldownDrill(null)}><Ico name="x" size={14}/></button>}
-                <button className="btn btn-ghost btn-sm" onClick={()=>setCooldownDrill(null===cooldownDrill?"pick-cooldown":null)} style={{fontSize:12}}><Ico name="plus" size={13}/> {cooldownDrill?"Change":"Add"}</button>
-              </div>
-            </div>
-            {cooldownDrill===null&&drills.length>0&&(
-              <div style={{maxHeight:180,overflowY:"auto"}}>
-                {drills.map(d=>{const c=CAT[d.category]||CAT["Hitting"];return(
-                  <div key={d.id} className="pick-item" style={{borderLeftColor:c.border,borderLeftWidth:3,marginBottom:6}} onClick={()=>setCooldownDrill(d)}>
-                    <div className="pick-info"><div className="pick-name" style={{fontSize:14}}>{d.name}</div><div className="pick-meta"><CatChip cat={d.category} small/><span className="dur-chip" style={{fontSize:11,padding:"2px 6px"}}>{d.duration||20}m</span></div></div>
-                  </div>
-                );})}
-              </div>
-            )}
-          </div>
-
-          <div className="divider-label" style={{marginTop:4}}>Parallel Station</div>
+          <div className="divider-label" style={{marginTop:20}}>Parallel Station</div>
           <div className={`bat-toggle${battingParallel?" active":""}`} onClick={()=>setBattingParallel(b=>!b)}>
             <div className="bat-toggle-header"><div className="bat-check">{battingParallel?<Ico name="checkmark" size={13}/>:""}</div><div><div className="bat-title"><Ico name="bat" size={15}/> Add Batting Practice Station</div><div className="bat-sub">Runs in parallel with all drills — players rotate through</div></div></div>
             {battingParallel&&(<div className="bat-detail">{BAT_DRILL.notes.split("\n").map((n,i)=><div key={i} className="bat-note">{n}</div>)}</div>)}
@@ -790,12 +704,12 @@ export default function PracticePlanner(){
             {battingParallel?(
               <div className="card">
                 <div className="schedule-grid">
-                  <div><div className="schedule-col-label"><Ico name="dumbbell" size={11}/> Main Drills</div><div className="tl">{buildSchedule(pTime,picked,warmupDrill,cooldownDrill).map((b,i)=>(<div key={i} className="tl-row"><div className="tl-dot" style={b.drill?(()=>{const c=CAT[b.drill.category]||CAT["Hitting"];return{background:c.text};})():{}} /><div className="tl-time">{b.start}</div><div className="tl-label" style={{fontSize:13}}>{b.label}{b.drill&&b.label!=="Warmup"&&b.label!=="Cool Down"?"":(b.drill?` · ${b.drill.name}`:"")}</div><div className="tl-dur">{b.dur}m</div></div>))}</div></div>
+                  <div><div className="schedule-col-label"><Ico name="dumbbell" size={11}/> Main Drills</div><div className="tl">{buildSchedule(pTime,picked).map((b,i)=>(<div key={i} className="tl-row"><div className="tl-dot" style={b.drill?(()=>{const c=CAT[b.drill.category]||CAT["Hitting"];return{background:c.text};})():{}} /><div className="tl-time">{b.start}</div><div className="tl-label" style={{fontSize:13}}>{b.label}</div><div className="tl-dur">{b.dur}m</div></div>))}</div></div>
                   <div><div className="schedule-col-label" style={{color:BAT_COLOR.text}}><Ico name="bat" size={11}/> Batting Station</div><div className="bat-station"><div className="bat-station-title"><Ico name="bat" size={13}/> Batting Practice</div><div style={{fontSize:12,color:T.textMuted,marginBottom:6}}>Full practice · rotate through</div>{BAT_DRILL.notes.split("\n").map((n,i)=><div key={i} className="bat-station-note">{n}</div>)}</div></div>
                 </div>
               </div>
             ):(
-              <div className="card"><div className="tl">{buildSchedule(pTime,picked,warmupDrill,cooldownDrill).map((b,i)=>(<div key={i} className="tl-row"><div className="tl-dot" style={b.drill?(()=>{const c=CAT[b.drill.category]||CAT["Hitting"];return{background:c.text};})():{}} /><div className="tl-time">{b.start} – {b.end}</div><div className="tl-label">{b.label}{b.drill&&(b.label==="Warmup"||b.label==="Cool Down")?` · ${b.drill.name}`:""}</div><div className="tl-dur">{b.dur}m</div></div>))}</div></div>
+              <div className="card"><div className="tl">{buildSchedule(pTime,picked).map((b,i)=>(<div key={i} className="tl-row"><div className="tl-dot" style={b.drill?(()=>{const c=CAT[b.drill.category]||CAT["Hitting"];return{background:c.text};})():{}} /><div className="tl-time">{b.start} – {b.end}</div><div className="tl-label">{b.label}</div><div className="tl-dur">{b.dur}m</div></div>))}</div></div>
             )}
           </>)}
           <button className="btn btn-primary btn-full" style={{marginTop:8}} onClick={savePractice}><Ico name="calPlus" size={16}/> Save Practice Plan</button>
@@ -806,7 +720,7 @@ export default function PracticePlanner(){
           <div className="section-title">Practice Plans</div>
           <div className="section-sub">Tap the share icon to send coaches a mobile link with a live timer</div>
           {plans.length===0?(<div className="empty"><Ico name="calDays" size={36}/><p>No plans yet.<br/>Create your first in the Create tab.</p></div>):plans.map(p=>{
-            const schedule=buildSchedule(p.start||"17:00",p.drills||[],p.warmupDrill||null,p.cooldownDrill||null),totalMins=schedule.reduce((s,b)=>s+b.dur,0),hasBat=!!p.battingParallel;
+            const schedule=buildSchedule(p.start||"17:00",p.drills||[]),totalMins=schedule.reduce((s,b)=>s+b.dur,0),hasBat=!!p.battingParallel;
             return(<div key={p.id} className="plan-card">
               <div className="plan-header">
                 <div><div className="plan-date">{dateLabel(p.date)}</div><div className="plan-time-sub">{fmt(...(p.start||"17:00").split(":").map(Number))} · {totalMins} min</div></div>
@@ -892,16 +806,6 @@ export default function PracticePlanner(){
           </div>
           <div className="divider-label">Drills ({ePicked.length}/3)</div>
           {drills.map(d=>{const sel=!!ePicked.find(p=>p.id===d.id);return(<div key={d.id} className={`pick-item${sel?" picked":""}`} onClick={()=>toggleEPick(d)}><div className="pick-header"><div className="pick-circle">{sel?"✓":""}</div><div className="pick-info"><div className="pick-name" style={{marginBottom:4}}>{d.name}</div><div className="pick-meta"><CatChip cat={d.category} small/><span className="dur-chip" style={{fontSize:11,padding:"2px 7px"}}>{d.duration||20}m</span></div></div>{sel&&<div className="pick-num">#{ePicked.findIndex(p=>p.id===d.id)+1}</div>}</div></div>);})}
-          <div className="divider-label">Warmup &amp; Cool Down <span style={{color:T.textDim,fontWeight:400,textTransform:"none",letterSpacing:0}}>(optional)</span></div>
-          {[{label:"Warmup Drill",color:CAT["Warmup"].text,val:eWarmupDrill,set:setEWarmupDrill},{label:"Cool Down Drill",color:CAT["Cool Down"].text,val:eCooldownDrill,set:setECooldownDrill}].map(({label,color,val,set})=>(
-            <div key={label} className="card" style={{marginBottom:8}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                <div><div style={{fontFamily:"'Oswald',sans-serif",fontSize:13,fontWeight:600,color}}>{label}</div><div style={{fontSize:11,color:T.textMuted,marginTop:1}}>{val?val.name:"None selected"}</div></div>
-                <div style={{display:"flex",gap:5}}>{val&&<button className="icon-btn danger" onClick={()=>set(null)}><Ico name="x" size={13}/></button>}<button className="btn btn-ghost btn-sm" style={{fontSize:11}} onClick={()=>set(val?"clear":null)}><Ico name="plus" size={12}/>{val?"Change":"Add"}</button></div>
-              </div>
-              {!val&&drills.length>0&&(<div style={{maxHeight:150,overflowY:"auto",marginTop:8}}>{drills.map(d=>{const c=CAT[d.category]||CAT["Hitting"];return(<div key={d.id} className="pick-item" style={{borderLeftColor:c.border,borderLeftWidth:3,marginBottom:5}} onClick={()=>set(d)}><div className="pick-info"><div className="pick-name" style={{fontSize:13}}>{d.name}</div><div className="pick-meta"><CatChip cat={d.category} small/></div></div></div>);})}</div>)}
-            </div>
-          ))}
           <div className="divider-label">Parallel Station</div>
           <div className={`bat-toggle${eBat?" active":""}`} onClick={()=>setEBat(b=>!b)} style={{marginBottom:14}}>
             <div className="bat-toggle-header"><div className="bat-check">{eBat?<Ico name="checkmark" size={13}/>:""}</div><div><div className="bat-title"><Ico name="bat" size={15}/> Batting Practice Station</div><div className="bat-sub">Runs in parallel with all drills</div></div></div>
