@@ -103,6 +103,45 @@ function decodePlan(str) {
 }
 function shareUrl(plan){return `${window.location.href.split("?")[0]}?p=${encodePlan(plan)}`;}
 
+// ─── Supabase client (no npm needed — uses the REST API directly) ─────────────
+const SB_URL = import.meta.env.VITE_SUPABASE_URL;
+const SB_KEY = import.meta.env.VITE_SUPABASE_KEY;
+
+async function sbGet(table) {
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/${table}?select=id,data`, {
+      headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` }
+    });
+    const rows = await res.json();
+    if (!Array.isArray(rows)) return [];
+    return rows.map(r => r.data);
+  } catch { return []; }
+}
+
+async function sbUpsert(table, id, data) {
+  try {
+    await fetch(`${SB_URL}/rest/v1/${table}`, {
+      method: "POST",
+      headers: {
+        apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`,
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates",
+      },
+      body: JSON.stringify({ id, data }),
+    });
+  } catch {}
+}
+
+async function sbDelete(table, id) {
+  try {
+    await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`, {
+      method: "DELETE",
+      headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` }
+    });
+  } catch {}
+}
+
+// localStorage fallbacks (dark mode preference only)
 const load=(k,fb)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):fb;}catch{return fb;}};
 const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}};
 
@@ -687,19 +726,23 @@ export default function PracticePlanner(){
   useEffect(()=>save("pp_dark",dark),[dark]);
 
   const[tab,setTab]=useState("drills");
-  const[drills,setDrills]=useState(()=>load("pp_drills",[]));
-  const[plans,setPlans]=useState(()=>load("pp_plans",[]));
+  const[drills,setDrills]=useState([]);
+  const[plans,setPlans]=useState([]);
   const[recentIds,setRecentIds]=useState(()=>load("pp_recent",[]));
+  const[loading,setLoading]=useState(true);
   const toast=useToast();
 
-  const[drillFilter,setDrillFilter]=useState("All");
-  const[createCatFilter,setCreateCatFilter]=useState("All");
-  const[createPlayerFilter,setCreatePlayerFilter]=useState("Any");
-  const[expandedPicks,setExpandedPicks]=useState({});
-
-  useEffect(()=>save("pp_drills",drills),[drills]);
-  useEffect(()=>save("pp_plans",plans),[plans]);
-  useEffect(()=>save("pp_recent",recentIds),[recentIds]);
+  // Load from Supabase on mount
+  useEffect(()=>{
+    async function fetchAll(){
+      setLoading(true);
+      const [d,p]=await Promise.all([sbGet("drills"),sbGet("plans")]);
+      setDrills(d);
+      setPlans(p);
+      setLoading(false);
+    }
+    fetchAll();
+  },[]);
 
   // Drill form
   const[editId,setEditId]=useState(null);
@@ -725,34 +768,64 @@ export default function PracticePlanner(){
   const[ePicked,setEPicked]=useState([]);
   const[eBat,setEBat]=useState(false);
 
+  const[drillFilter,setDrillFilter]=useState("All");
+  const[createCatFilter,setCreateCatFilter]=useState("All");
+  const[createPlayerFilter,setCreatePlayerFilter]=useState("Any");
+  const[expandedPicks,setExpandedPicks]=useState({});
+  useEffect(()=>save("pp_recent",recentIds),[recentIds]);
+
   if(shared)return<MobileView plan={shared} T={T}/>;
+
+  if(loading) return(
+    <div style={{minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16}}>
+      <img src={LOGO} alt="Panthers" style={{width:72,height:72,objectFit:"contain",filter:"drop-shadow(0 2px 12px rgba(95,141,181,0.5))",animation:"pp-spin 2s linear infinite"}}/>
+      <div style={{fontFamily:"'Oswald',sans-serif",fontSize:16,color:T.steel,letterSpacing:1}}>Loading your drills...</div>
+      <style>{`@keyframes pp-spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}`}</style>
+    </div>
+  );
 
   // Drill fns
   function resetForm(){setEditId(null);setDName("");setDCat("Hitting");setDPlay(8);setDDur(20);setDVenue("Both");setDNotes("");setDVideo("");setShowForm(false);}
   function openEdit(d){setEditId(d.id);setDName(d.name);setDCat(d.category);setDPlay(d.players);setDDur(d.duration||20);setDVenue(d.venue||"Both");setDNotes(d.notes||"");setDVideo(d.video||"");setShowForm(true);window.scrollTo({top:0,behavior:"smooth"});}
-  function saveDrill(){
+  async function saveDrill(){
     if(!dName.trim())return toast.show("Enter a drill name");
     const dr={id:editId||Date.now(),name:dName.trim(),category:dCat,players:dPlay,duration:dDur,venue:dVenue,notes:dNotes,video:dVideo};
     setDrills(prev=>editId?prev.map(d=>d.id===editId?dr:d):[...prev,dr]);
+    await sbUpsert("drills",dr.id,dr);
     toast.show(editId?"Drill updated":"Drill saved");resetForm();
   }
-  function delDrill(id){if(!window.confirm("Delete this drill?"))return;setDrills(prev=>prev.filter(d=>d.id!==id));setRecentIds(prev=>prev.filter(x=>x!==id));toast.show("Drill deleted");}
+  async function delDrill(id){
+    if(!window.confirm("Delete this drill?"))return;
+    setDrills(prev=>prev.filter(d=>d.id!==id));
+    setRecentIds(prev=>prev.filter(x=>x!==id));
+    await sbDelete("drills",id);
+    toast.show("Drill deleted");
+  }
 
   // Practice fns
   function togglePick(d){setPicked(prev=>prev.find(p=>p.id===d.id)?prev.filter(p=>p.id!==d.id):prev.length>=3?(toast.show("Max 3 drills"),prev):[...prev,d]);}
-  function savePractice(){
+  async function savePractice(){
     if(!picked.length)return toast.show("Pick at least one drill");
-    setPlans(prev=>[{id:Date.now(),date:pDate,start:pTime,drills:picked,battingParallel},...prev]);
+    const plan={id:Date.now(),date:pDate,start:pTime,drills:picked,battingParallel};
+    setPlans(prev=>[plan,...prev]);
     setRecentIds(prev=>[...new Set([...picked.map(d=>d.id),...prev])].slice(0,6));
+    await sbUpsert("plans",plan.id,plan);
     setPicked([]);setPDate(today);setPTime("17:00");setBattingParallel(false);
     toast.show("Practice saved");setTab("plans");
   }
-  function delPlan(id){if(!window.confirm("Delete this plan?"))return;setPlans(prev=>prev.filter(p=>p.id!==id));toast.show("Deleted");}
+  async function delPlan(id){
+    if(!window.confirm("Delete this plan?"))return;
+    setPlans(prev=>prev.filter(p=>p.id!==id));
+    await sbDelete("plans",id);
+    toast.show("Deleted");
+  }
   function openEditPlan(p){setEditPlan(p);setEPDate(p.date);setEPTime(p.start);setEPicked([...p.drills]);setEBat(!!p.battingParallel);}
   function toggleEPick(d){setEPicked(prev=>prev.find(p=>p.id===d.id)?prev.filter(p=>p.id!==d.id):prev.length>=3?(toast.show("Max 3 drills"),prev):[...prev,d]);}
-  function saveEditPlan(){
+  async function saveEditPlan(){
     if(!ePicked.length)return toast.show("Pick at least one drill");
-    setPlans(prev=>prev.map(p=>p.id===editPlan.id?{...p,date:ePDate,start:ePTime,drills:ePicked,battingParallel:eBat}:p));
+    const updated={...editPlan,date:ePDate,start:ePTime,drills:ePicked,battingParallel:eBat};
+    setPlans(prev=>prev.map(p=>p.id===editPlan.id?updated:p));
+    await sbUpsert("plans",updated.id,updated);
     setEditPlan(null);toast.show("Practice updated");
   }
   function copyLink(plan){const url=shareUrl(plan);navigator.clipboard.writeText(url).then(()=>toast.show("Link copied! 📋")).catch(()=>toast.show("Copy: "+url));}
