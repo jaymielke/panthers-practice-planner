@@ -481,90 +481,163 @@ function MobileView({plan,T}){
             </div>
           )}
 
-          {hasBat&&(
-            /* Column header row */
-            <div style={{display:"grid",gridTemplateColumns:"70fr 30fr",gap:8,marginBottom:4,padding:"0 2px"}}>
-              <div style={{fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"1px",color:T.textDim,display:"flex",alignItems:"center",gap:4}}>
-                <Ico name="dumbbell" size={10}/> Main Drills
-              </div>
-              <div style={{fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"1px",color:BAT_COLOR.text,display:"flex",alignItems:"center",gap:4}}>
-                <Ico name="bat" size={10}/> Batting
-              </div>
-            </div>
-          )}
+          {hasBat ? (() => {
+            const warmup   = blocks[0];
+            const cooldown = blocks[blocks.length - 1];
+            const drillBlocks = blocks.slice(1, -1);
+            const drillCount  = drillBlocks.length;
 
-          {blocks.map((b,i)=>{
+            return (
+              <>
+                {/* Warmup — full width */}
+                {(()=>{
+                  const isCur=started&&!done&&0===cur;
+                  const isDone=started&&(done||0<cur);
+                  return(
+                    <div className={`mv-block${isCur?" current":""}${isDone?" done":""}`} style={{marginBottom:8}}>
+                      <div className="mv-block-hd">
+                        <div className="mv-idx">{isDone?<Ico name="check" size={14}/>:1}</div>
+                        <div className="mv-block-info">
+                          <div className="mv-block-name">{warmup.label}</div>
+                          <div className="mv-block-time">{warmup.start} – {warmup.end}</div>
+                        </div>
+                        <div className="mv-block-dur">{warmup.dur}m</div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Column headers */}
+                <div style={{display:"grid",gridTemplateColumns:"70fr 30fr",gap:8,marginBottom:4,padding:"0 2px"}}>
+                  <div style={{fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"1px",color:T.textDim,display:"flex",alignItems:"center",gap:4}}>
+                    <Ico name="dumbbell" size={10}/> Main Drills
+                  </div>
+                  <div style={{fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"1px",color:BAT_COLOR.text,display:"flex",alignItems:"center",gap:4}}>
+                    <Ico name="bat" size={10}/> Batting
+                  </div>
+                </div>
+
+                {/* 70/30 grid — drills col + single batting card */}
+                <div style={{display:"grid",gridTemplateColumns:"70fr 30fr",gap:8,marginBottom:8}}>
+                  {/* Left: drill blocks stacked */}
+                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    {drillBlocks.map((b,ri)=>{
+                      const gi=ri+1; // global block index
+                      const isCur=started&&!done&&gi===cur;
+                      const isDone=started&&(done||gi<cur);
+                      const isOpen=open===gi;
+                      const c=b.drill?(CAT[b.drill.category]||CAT["Hitting"]):null;
+                      return(
+                        <div key={gi} className={`mv-block${isCur?" current":""}${isDone?" done":""}`}
+                          style={{marginBottom:0,...(c?{borderLeftColor:c.border,borderLeftWidth:3}:{})}}>
+                          <div className="mv-block-hd" onClick={()=>setOpen(isOpen?null:gi)}>
+                            <div className="mv-idx" style={isCur?{}:c?{background:c.bg,color:c.text}:{}}>
+                              {isDone?<Ico name="check" size={14}/>:gi+1}
+                            </div>
+                            <div className="mv-block-info">
+                              <div className="mv-block-name" style={c&&!isCur?{color:c.text}:{}}>{b.label}</div>
+                              <div className="mv-block-time">{b.start} – {b.end}</div>
+                            </div>
+                            <div className="mv-block-dur">{b.dur}m <Ico name={isOpen?"chevUp":"chevDown"} size={13}/></div>
+                          </div>
+                          {isOpen&&(
+                            <div className="mv-block-detail">
+                              <div className="mv-dl">
+                                <div className="mv-chips">
+                                  <CatChip cat={b.drill.category} small/>
+                                  <span className="mv-chip"><Ico name="users" size={11}/>{b.drill.players}p</span>
+                                  <span className="mv-chip"><Ico name="clock" size={11}/>{b.drill.duration||20}m</span>
+                                  {b.drill.venue&&b.drill.venue!=="Both"&&<VenueChip venue={b.drill.venue} small/>}
+                                </div>
+                              </div>
+                              {b.drill.notes&&(
+                                <div className="mv-dl">
+                                  <div className="mv-dl-label">Instructions</div>
+                                  <ul className="mv-notes">{b.drill.notes.split("\n").filter(Boolean).map((n,j)=><li key={j}>{n}</li>)}</ul>
+                                </div>
+                              )}
+                              {b.drill.video&&<a href={b.drill.video} target="_blank" rel="noopener noreferrer" className="mv-vid"><Ico name="video" size={14}/> Watch Drill Video</a>}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Right: single batting card spanning all drill rows */}
+                  <div style={{background:BAT_COLOR.bg,border:`1.5px solid ${BAT_COLOR.border}`,borderRadius:12,padding:"14px 12px",display:"flex",flexDirection:"column",gap:8}}>
+                    <div style={{fontFamily:"'Oswald',sans-serif",fontSize:14,fontWeight:700,color:BAT_COLOR.text,display:"flex",alignItems:"center",gap:6}}>
+                      <Ico name="bat" size={14}/> Batting Practice
+                    </div>
+                    <div style={{fontSize:12,color:T.textMuted}}>Runs all practice · rotate through</div>
+                    <div style={{borderTop:`1px solid ${BAT_COLOR.border}`,paddingTop:8}}>
+                      {BAT_DRILL.notes.split("\n").map((n,j)=>(
+                        <div key={j} style={{fontSize:12,color:T.noteText,padding:"2px 0"}}>
+                          <span style={{color:BAT_COLOR.text,fontWeight:700}}>· </span>{n}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cool Down — full width */}
+                {(()=>{
+                  const gi=blocks.length-1;
+                  const isCur=started&&!done&&gi===cur;
+                  const isDone=started&&(done||gi<cur);
+                  return(
+                    <div className={`mv-block${isCur?" current":""}${isDone?" done":""}`}>
+                      <div className="mv-block-hd">
+                        <div className="mv-idx">{isDone?<Ico name="check" size={14}/>:gi+1}</div>
+                        <div className="mv-block-info">
+                          <div className="mv-block-name">{cooldown.label}</div>
+                          <div className="mv-block-time">{cooldown.start} – {cooldown.end}</div>
+                        </div>
+                        <div className="mv-block-dur">{cooldown.dur}m</div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </>
+            );
+          })() : blocks.map((b,i)=>{
             const isCur=started&&!done&&i===cur;
             const isDone=started&&(done||i<cur);
             const isOpen=open===i;
             const hasDr=!!b.drill;
             const c=hasDr?(CAT[b.drill.category]||CAT["Hitting"]):null;
-            // Warmup (i===0) and Cool Down (last block) always full width
-            const isEndBlock=!hasDr;
-
-            if(hasBat&&!isEndBlock){
-              // Drill row: 70/30 layout
-              return(
-                <div key={i} className="mv-par-row">
-                  {/* 70% — drill block */}
-                  <div className="mv-par-drill">
-                    <div className={`mv-block${isCur?" current":""}${isDone?" done":""}`}
-                      style={c?{borderLeftColor:c.border,borderLeftWidth:3}:{}}>
-                      <div className="mv-block-hd" onClick={()=>setOpen(isOpen?null:i)}>
-                        <div className="mv-idx" style={isCur?{}:c?{background:c.bg,color:c.text}:{}}>
-                          {isDone?<Ico name="check" size={14}/>:i+1}
-                        </div>
-                        <div className="mv-block-info">
-                          <div className="mv-block-name" style={c&&!isCur?{color:c.text}:{}}>{b.label}</div>
-                          <div className="mv-block-time">{b.start} – {b.end}</div>
-                        </div>
-                        <div className="mv-block-dur">{b.dur}m <Ico name={isOpen?"chevUp":"chevDown"} size={13}/></div>
-                      </div>
-                      {isOpen&&(
-                        <div className="mv-block-detail">
-                          <div className="mv-dl">
-                            <div className="mv-chips">
-                              <CatChip cat={b.drill.category} small/>
-                              <span className="mv-chip"><Ico name="users" size={11}/>{b.drill.players}p</span>
-                              <span className="mv-chip"><Ico name="clock" size={11}/>{b.drill.duration||20}m</span>
-                              {b.drill.venue&&b.drill.venue!=="Both"&&<VenueChip venue={b.drill.venue} small/>}
-                            </div>
-                          </div>
-                          {b.drill.notes&&(
-                            <div className="mv-dl">
-                              <div className="mv-dl-label">Instructions</div>
-                              <ul className="mv-notes">{b.drill.notes.split("\n").filter(Boolean).map((n,j)=><li key={j}>{n}</li>)}</ul>
-                            </div>
-                          )}
-                          {b.drill.video&&<a href={b.drill.video} target="_blank" rel="noopener noreferrer" className="mv-vid"><Ico name="video" size={14}/> Watch Drill Video</a>}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  {/* 30% — batting card */}
-                  <div className="mv-par-bat">
-                    <div className="mv-par-bat-inner">
-                      <div className="mv-par-bat-label"><Ico name="bat" size={10}/> Batting</div>
-                      {BAT_DRILL.notes.split("\n").map((n,j)=><div key={j} className="mv-par-bat-note">{n}</div>)}
-                    </div>
-                  </div>
-                </div>
-              );
-            }
-
-            // Warmup / Cool Down — always full width
             return(
-              <div key={i} className={`mv-block${isCur?" current":""}${isDone?" done":""}`}>
-                <div className="mv-block-hd">
-                  <div className="mv-idx" style={isCur?{}:{}}>
+              <div key={i} className={`mv-block${isCur?" current":""}${isDone?" done":""}`}
+                style={hasDr&&c?{borderLeftColor:c.border,borderLeftWidth:3}:{}}>
+                <div className="mv-block-hd" onClick={()=>hasDr&&setOpen(isOpen?null:i)}>
+                  <div className="mv-idx" style={isCur?{}:hasDr&&c?{background:c.bg,color:c.text}:{}}>
                     {isDone?<Ico name="check" size={14}/>:i+1}
                   </div>
                   <div className="mv-block-info">
-                    <div className="mv-block-name">{b.label}</div>
+                    <div className="mv-block-name" style={hasDr&&c&&!isCur?{color:c.text}:{}}>{b.label}</div>
                     <div className="mv-block-time">{b.start} – {b.end}</div>
                   </div>
-                  <div className="mv-block-dur">{b.dur}m</div>
+                  <div className="mv-block-dur">{b.dur}m {hasDr&&<Ico name={isOpen?"chevUp":"chevDown"} size={13}/>}</div>
                 </div>
+                {hasDr&&isOpen&&(
+                  <div className="mv-block-detail">
+                    <div className="mv-dl">
+                      <div className="mv-chips">
+                        <CatChip cat={b.drill.category} small/>
+                        <span className="mv-chip"><Ico name="users" size={11}/>{b.drill.players} players</span>
+                        <span className="mv-chip"><Ico name="clock" size={11}/>{b.drill.duration||20}m</span>
+                        {b.drill.venue&&b.drill.venue!=="Both"&&<VenueChip venue={b.drill.venue} small/>}
+                      </div>
+                    </div>
+                    {b.drill.notes&&(
+                      <div className="mv-dl">
+                        <div className="mv-dl-label">Instructions</div>
+                        <ul className="mv-notes">{b.drill.notes.split("\n").filter(Boolean).map((n,j)=><li key={j}>{n}</li>)}</ul>
+                      </div>
+                    )}
+                    {b.drill.video&&<a href={b.drill.video} target="_blank" rel="noopener noreferrer" className="mv-vid"><Ico name="video" size={14}/> Watch Drill Video</a>}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -945,7 +1018,6 @@ export default function PracticePlanner(){
 
                   {/* Expanded drill list */}
                   {hasBat?(
-                    // Warmup full-width, then 70/30 grid for drills+batting, cooldown full-width
                     <div>
                       {/* Warmup — full width */}
                       <div className="plan-drill-row">
@@ -957,15 +1029,15 @@ export default function PracticePlanner(){
                       </div>
 
                       {/* Column headers */}
-                      <div className="plan-parallel-grid" style={{marginTop:8,marginBottom:0}}>
-                        <div><div className="plan-parallel-col-label"><Ico name="dumbbell" size={11}/> Main Drills</div></div>
-                        <div><div className="plan-parallel-col-label" style={{color:BAT_COLOR.text}}><Ico name="bat" size={11}/> Batting Station</div></div>
+                      <div style={{display:"grid",gridTemplateColumns:"70fr 30fr",gap:10,marginBottom:4,marginTop:10}}>
+                        <div className="plan-parallel-col-label"><Ico name="dumbbell" size={11}/> Main Drills</div>
+                        <div className="plan-parallel-col-label" style={{color:BAT_COLOR.text}}><Ico name="bat" size={11}/> Batting Station</div>
                       </div>
 
-                      {/* Drills 70% + batting 30% side by side */}
-                      <div className="plan-parallel-grid" style={{alignItems:"start"}}>
-                        {/* Drills col */}
-                        <div className="plan-drills" style={{borderTop:`1px solid ${T.border}`}}>
+                      {/* 70/30 — drills stacked left, single batting card right */}
+                      <div style={{display:"grid",gridTemplateColumns:"70fr 30fr",gap:10,alignItems:"start"}}>
+                        {/* Drills column */}
+                        <div style={{borderTop:`1px solid ${T.border}`}}>
                           {(p.drills||[]).map((d,i)=>{
                             const c=CAT[d.category]||CAT["Hitting"];
                             const blk=schedule[i+1];
@@ -985,13 +1057,18 @@ export default function PracticePlanner(){
                             );
                           })}
                         </div>
-                        {/* Batting col */}
-                        <div style={{borderTop:`1px solid ${BAT_COLOR.border}`,paddingTop:12}}>
-                          <div className="plan-bat-card">
-                            <div className="plan-bat-title"><Ico name="bat" size={12}/> Batting Practice</div>
-                            <div style={{fontSize:10,color:T.textMuted,marginBottom:6}}>Full practice · rotate through</div>
-                            {BAT_DRILL.notes.split("\n").map((n,i)=><div key={i} className="plan-bat-note">{n}</div>)}
+
+                        {/* Single batting card — spans full height of drills */}
+                        <div style={{background:BAT_COLOR.bg,border:`1.5px solid ${BAT_COLOR.border}`,borderRadius:10,padding:"12px 10px",position:"sticky",top:0}}>
+                          <div style={{fontFamily:"'Oswald',sans-serif",fontSize:13,fontWeight:700,color:BAT_COLOR.text,display:"flex",alignItems:"center",gap:5,marginBottom:6}}>
+                            <Ico name="bat" size={12}/> Batting Practice
                           </div>
+                          <div style={{fontSize:10,color:T.textMuted,marginBottom:8}}>Full practice · rotate through</div>
+                          {BAT_DRILL.notes.split("\n").map((n,i)=>(
+                            <div key={i} style={{fontSize:11,color:T.noteText,padding:"2px 0"}}>
+                              <span style={{color:BAT_COLOR.text,fontWeight:700}}>· </span>{n}
+                            </div>
+                          ))}
                         </div>
                       </div>
 
