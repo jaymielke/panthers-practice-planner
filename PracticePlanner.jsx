@@ -533,10 +533,33 @@ export default function PracticePlanner(){
   useEffect(()=>{async function go(){setLoading(true);const[d,p]=await Promise.all([sbGet("drills"),sbGet("plans")]);setDrills(d);setPlans(p);setLoading(false);}go();},[]);
 
   // Week strip
-  const[weekBase,setWeekBase]=useState(today);
-  const[selectedDate,setSelectedDate]=useState(today);
+  const[weekBase,setWeekBase]=useState(()=>{
+    const p=new URLSearchParams(window.location.search).get("share");
+    return p||today;
+  });
+  const[selectedDate,setSelectedDate]=useState(()=>{
+    // If opened with ?share=date, start on that date
+    const p=new URLSearchParams(window.location.search).get("share");
+    return p||today;
+  });
   const weekDates=getWeekDates(weekBase);
   const planMap=Object.fromEntries(plans.map(p=>[p.date,p]));
+
+  // Keep URL in sync with selected date on Plans tab
+  useEffect(()=>{
+    if(tab!=="plans")return;
+    const url=new URL(window.location.href);
+    url.searchParams.set("share",selectedDate);
+    window.history.replaceState(null,"",url.toString());
+  },[selectedDate,tab]);
+
+  // Clear share param when leaving Plans tab
+  useEffect(()=>{
+    if(tab==="plans")return;
+    const url=new URL(window.location.href);
+    url.searchParams.delete("share");
+    window.history.replaceState(null,"",url.toString());
+  },[tab]);
 
   // Drill form
   const[editId,setEditId]=useState(null);
