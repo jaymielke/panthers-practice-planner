@@ -246,7 +246,8 @@ body{background:${T.bg};font-family:'DM Sans',sans-serif;color:${T.text};min-hei
 @keyframes toastIn{from{transform:translateX(-50%) translateY(8px);opacity:0;}to{transform:translateX(-50%) translateY(0);opacity:1;}}
 
 /* ═══ WEEK STRIP ══════════════════════════════════════════════════ */
-.week-strip-wrap{background:${T.isDark?"#090d18":T.surface};padding:10px 14px 0;border-bottom:1px solid ${T.border};position:sticky;top:58px;z-index:40;}
+.week-strip-wrap{background:${T.isDark?"#090d18":T.surface};padding:10px 14px 0;border-bottom:1px solid ${T.border};position:sticky;top:58px;z-index:40;transition:transform 0.25s ease,opacity 0.25s ease;}
+.week-strip-wrap.strip-hidden{transform:translateY(-100%);opacity:0;pointer-events:none;}
 .week-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
 .week-range{font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;color:${T.textMuted};}
 .week-arr{background:none;border:none;color:${T.textDim};font-size:14px;cursor:pointer;padding:4px 8px;border-radius:6px;transition:color 0.15s;}
@@ -526,6 +527,23 @@ export default function PracticePlanner(){
   useEffect(()=>save("pp_recent",recentIds),[recentIds]);
   useEffect(()=>{async function go(){setLoading(true);const[d,p]=await Promise.all([sbGet("drills"),sbGet("plans")]);setDrills(d);setPlans(p);setLoading(false);}go();},[]);
 
+  // Week strip hide-on-scroll
+  const[stripHidden,setStripHidden]=useState(false);
+  const scrollRef=useRef(null);
+  const lastScrollY=useRef(0);
+  useEffect(()=>{
+    const el=scrollRef.current;
+    if(!el)return;
+    function onScroll(){
+      const y=el.scrollTop;
+      if(y>lastScrollY.current&&y>60)setStripHidden(true);
+      else if(y<lastScrollY.current)setStripHidden(false);
+      lastScrollY.current=y;
+    }
+    el.addEventListener("scroll",onScroll,{passive:true});
+    return()=>el.removeEventListener("scroll",onScroll);
+  },[tab]);
+
   // Week strip
   const[weekBase,setWeekBase]=useState(()=>{
     const p=new URLSearchParams(window.location.search).get("share");
@@ -678,7 +696,7 @@ export default function PracticePlanner(){
 
       {/* Week strip — Plans tab only */}
       {tab==="plans"&&(
-        <div className="week-strip-wrap">
+        <div className={`week-strip-wrap${stripHidden?" strip-hidden":""}`}>
           <div className="week-nav">
             <button className="week-arr" onClick={()=>setWeekBase(addWeeks(weekBase,-1))}>‹</button>
             <div className="week-range">{(()=>{
@@ -700,7 +718,7 @@ export default function PracticePlanner(){
         </div>
       )}
 
-      <div className="scroll-area">
+      <div className="scroll-area" ref={scrollRef}>
 
         {/* ══ DRILLS ══ */}
         {tab==="drills"&&(<>
