@@ -248,7 +248,7 @@ body{background:${P.bg};font-family:'Nunito',sans-serif;color:${P.text};min-heig
 .bat-note::before{content:"· ";color:${BAT_COLOR.text};font-weight:900;}
 
 /* Schedule preview grid */
-.schedule-grid{display:grid;grid-template-columns:70fr 30fr;gap:10px;margin-bottom:8px;}
+.schedule-grid{display:grid;grid-template-columns:minmax(0,70fr) minmax(0,30fr);gap:10px;margin-bottom:8px;}
 .schedule-col-label{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:${P.textDim};margin-bottom:6px;display:flex;align-items:center;gap:5px;}
 .bat-station{background:${BAT_COLOR.bg};border:1.5px solid ${BAT_COLOR.border};border-radius:10px;padding:12px;}
 .bat-station-title{font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;color:${BAT_COLOR.text};margin-bottom:6px;display:flex;align-items:center;gap:6px;}
@@ -320,7 +320,7 @@ body{background:${P.bg};font-family:'Nunito',sans-serif;color:${P.text};min-heig
 .ps-timer-btn:disabled{opacity:0.22;cursor:not-allowed;pointer-events:none;}
 .ps-prog-wrap{height:4px;background:rgba(95,141,181,0.15);}
 .ps-prog-fill{height:4px;background:${P.gold};transition:width 0.5s linear;}
-.col-hdrs{display:grid;grid-template-columns:70fr 30fr;gap:7px;padding:8px 14px 2px;}
+.col-hdrs{display:grid;grid-template-columns:minmax(0,70fr) minmax(0,30fr);gap:7px;padding:8px 14px 2px;}
 .col-hdr{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:${P.textDim};display:flex;align-items:center;gap:4px;}
 .col-hdr.bat{color:${BAT_COLOR.text};}
 .ps-blocks{padding:0 14px 24px;display:flex;flex-direction:column;gap:7px;margin-top:7px;}
@@ -361,7 +361,13 @@ body{background:${P.bg};font-family:'Nunito',sans-serif;color:${P.text};min-heig
 .ps-empty-title{font-family:'Oswald',sans-serif;font-size:18px;font-weight:700;color:${P.textMuted};margin:12px 0 6px;}
 .ps-empty-sub{font-size:12px;margin-bottom:18px;line-height:1.6;font-weight:600;}
 
-@media(max-width:480px){.ps-timer-digits{font-size:24px;}.schedule-grid{grid-template-columns:1fr;}}
+@media(max-width:480px){
+.ps-timer-digits{font-size:24px;}
+.schedule-grid{grid-template-columns:1fr;}
+.ps-blocks{padding:0 10px 24px;}
+}
+.ps-bat-col{min-width:0;word-break:break-word;}
+.ps-bat-note{white-space:normal;word-break:break-word;}
 ::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:${P.border};border-radius:3px;}
 `;
 
@@ -461,7 +467,7 @@ function PracticeSchedule({plan}){
             <div className="col-hdr"><Ico name="dumbbell" size={10}/> Main Drills</div>
             <div className="col-hdr bat"><Ico name="bat" size={10}/> Batting</div>
           </div>
-          <div style={{display:"grid",gridTemplateColumns:"70fr 30fr",gap:8}}>
+          <div style={{display:"grid",gridTemplateColumns:"minmax(0,70fr) minmax(0,30fr)",gap:7}}>
             <div style={{display:"flex",flexDirection:"column",gap:7}}>
               {blocks.slice(1,-1).map((b,ri)=>{
                 const gi=ri+1,isCur=started&&!done&&gi===cur,isDone=started&&(done||gi<cur),isOpen=open===gi,c=b.drill?(CAT[b.drill.category]||CAT["Hitting"]):null;
@@ -640,14 +646,16 @@ export default function PracticePlanner(){
     </div>);
   }
 
-  function EndDrillPicker({label,color,val,set}){
+  function EndDrillPicker({label,color,val,set,filterCat}){
+    const filtered=drills.filter(d=>d.category===filterCat);
     return(
       <div className="card" style={{marginBottom:8}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <div><div style={{fontFamily:"'Oswald',sans-serif",fontSize:14,fontWeight:700,color}}>{label}</div><div style={{fontSize:11,color:P.textMuted,marginTop:2,fontWeight:600}}>{val?val.name:"No drill selected"}</div></div>
           <div style={{display:"flex",gap:6}}>{val&&<button className="icon-btn danger" onClick={()=>set(null)}><Ico name="x" size={13}/></button>}<button className="btn btn-ghost btn-sm" onClick={()=>set(null)}><Ico name="plus" size={12}/>{val?"Change":"Add"}</button></div>
         </div>
-        {!val&&drills.length>0&&(<div style={{maxHeight:180,overflowY:"auto",marginTop:10}}>{drills.map(d=>{const c=CAT[d.category]||CAT["Hitting"];return(<div key={d.id} className="pick-item" style={{borderLeftColor:c.border,marginBottom:6}} onClick={()=>set(d)}><div className="pick-info" style={{padding:"10px 14px"}}><div className="pick-name" style={{fontSize:13}}>{d.name}</div><div className="pick-meta"><CatChip cat={d.category} small/></div></div></div>);})}</div>)}
+        {!val&&filtered.length>0&&(<div style={{maxHeight:180,overflowY:"auto",marginTop:10}}>{filtered.map(d=>{const c=CAT[d.category]||CAT["Hitting"];return(<div key={d.id} className="pick-item" style={{borderLeftColor:c.border,marginBottom:6}} onClick={()=>set(d)}><div className="pick-info" style={{padding:"10px 14px"}}><div className="pick-name" style={{fontSize:13}}>{d.name}</div><div className="pick-meta"><CatChip cat={d.category} small/></div></div></div>);})}</div>)}
+        {!val&&filtered.length===0&&<div style={{fontSize:12,color:P.textDim,marginTop:10,fontWeight:600}}>No {filterCat} drills yet — add some in the Drills tab.</div>}
       </div>
     );
   }
@@ -733,8 +741,8 @@ export default function PracticePlanner(){
             </>);
           })()}
           <div className="divider-label" style={{marginTop:20}}>Warmup &amp; Cool Down <span style={{color:P.textDim,fontWeight:600,textTransform:"none",letterSpacing:0,fontSize:11}}>(optional)</span></div>
-          <EndDrillPicker label="Warmup Drill" color={CAT["Warmup"].text} val={warmupDrill} set={setWarmupDrill}/>
-          <EndDrillPicker label="Cool Down Drill" color={CAT["Cool Down"].text} val={cooldownDrill} set={setCooldownDrill}/>
+          <EndDrillPicker label="Warmup Drill" color={CAT["Warmup"].text} val={warmupDrill} set={setWarmupDrill} filterCat="Warmup"/>
+          <EndDrillPicker label="Cool Down Drill" color={CAT["Cool Down"].text} val={cooldownDrill} set={setCooldownDrill} filterCat="Cool Down"/>
           <div className="divider-label" style={{marginTop:4}}>Parallel Station</div>
           <div className={`bat-toggle${battingParallel?" active":""}`} onClick={()=>setBattingParallel(b=>!b)}>
             <div className="bat-toggle-header"><div className="bat-check">{battingParallel&&<Ico name="checkmark" size={13}/>}</div><div><div className="bat-title"><Ico name="bat" size={14}/> Add Batting Practice Station</div><div className="bat-sub">Runs in parallel with all drills — players rotate through</div></div></div>
@@ -804,15 +812,17 @@ export default function PracticePlanner(){
           <div className="divider-label">Drills ({ePicked.length}/3)</div>
           {drills.map(d=>{const sel=!!ePicked.find(p=>p.id===d.id);const c=CAT[d.category]||CAT["Hitting"];return(<div key={d.id} className={`pick-item${sel?" picked":""}`} style={{borderLeftColor:sel?P.steelBorder:c.border}} onClick={()=>toggleEPick(d)}><div className="pick-header"><div className="pick-circle">{sel&&<Ico name="checkmark" size={12}/>}</div><div className="pick-info"><div className="pick-name" style={{marginBottom:3}}>{d.name}</div><div className="pick-meta"><CatChip cat={d.category} small/><span className="dur-chip" style={{fontSize:10,padding:"1px 6px"}}>{d.duration||20}m</span></div></div>{sel&&<div className="pick-num">#{ePicked.findIndex(p=>p.id===d.id)+1}</div>}</div></div>);})}
           <div className="divider-label">Warmup &amp; Cool Down</div>
-          {[{label:"Warmup Drill",color:CAT["Warmup"].text,val:eWarmupDrill,set:setEWarmupDrill},{label:"Cool Down Drill",color:CAT["Cool Down"].text,val:eCooldownDrill,set:setECooldownDrill}].map(({label,color,val,set})=>(
-            <div key={label} className="card" style={{marginBottom:8}}>
+          {[{label:"Warmup Drill",color:CAT["Warmup"].text,val:eWarmupDrill,set:setEWarmupDrill,fc:"Warmup"},{label:"Cool Down Drill",color:CAT["Cool Down"].text,val:eCooldownDrill,set:setECooldownDrill,fc:"Cool Down"}].map(({label,color,val,set,fc})=>{
+            const filtered=drills.filter(d=>d.category===fc);
+            return(<div key={label} className="card" style={{marginBottom:8}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                 <div><div style={{fontFamily:"'Oswald',sans-serif",fontSize:14,fontWeight:700,color}}>{label}</div><div style={{fontSize:11,color:P.textMuted,marginTop:1,fontWeight:600}}>{val?val.name:"None selected"}</div></div>
                 <div style={{display:"flex",gap:5}}>{val&&<button className="icon-btn danger" onClick={()=>set(null)}><Ico name="x" size={13}/></button>}<button className="btn btn-ghost btn-sm" onClick={()=>set(null)}><Ico name="plus" size={12}/>{val?"Change":"Add"}</button></div>
               </div>
-              {!val&&drills.length>0&&(<div style={{maxHeight:150,overflowY:"auto",marginTop:8}}>{drills.map(d=>{const c=CAT[d.category]||CAT["Hitting"];return(<div key={d.id} className="pick-item" style={{borderLeftColor:c.border,marginBottom:5}} onClick={()=>set(d)}><div className="pick-info" style={{padding:"8px 12px"}}><div className="pick-name" style={{fontSize:13}}>{d.name}</div><div className="pick-meta"><CatChip cat={d.category} small/></div></div></div>);})}</div>)}
-            </div>
-          ))}
+              {!val&&filtered.length>0&&(<div style={{maxHeight:150,overflowY:"auto",marginTop:8}}>{filtered.map(d=>{const c=CAT[d.category]||CAT["Hitting"];return(<div key={d.id} className="pick-item" style={{borderLeftColor:c.border,marginBottom:5}} onClick={()=>set(d)}><div className="pick-info" style={{padding:"8px 12px"}}><div className="pick-name" style={{fontSize:13}}>{d.name}</div><div className="pick-meta"><CatChip cat={d.category} small/></div></div></div>);})}</div>)}
+              {!val&&filtered.length===0&&<div style={{fontSize:12,color:P.textDim,marginTop:8,fontWeight:600}}>No {fc} drills yet — add some in the Drills tab.</div>}
+            </div>);
+          })}
           <div className="divider-label">Parallel Station</div>
           <div className={`bat-toggle${eBat?" active":""}`} onClick={()=>setEBat(b=>!b)} style={{marginBottom:14}}>
             <div className="bat-toggle-header"><div className="bat-check">{eBat&&<Ico name="checkmark" size={13}/>}</div><div><div className="bat-title"><Ico name="bat" size={14}/> Batting Practice Station</div><div className="bat-sub">Runs in parallel with all drills</div></div></div>
