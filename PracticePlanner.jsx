@@ -332,7 +332,7 @@ body{background:${P.bg};font-family:'Nunito',sans-serif;color:${P.text};min-heig
 .ps-block.cur .ps-idx{background:${P.steel};border-color:${P.steel};color:#fff;}
 .ps-block.done .ps-idx{background:${P.success};border-color:${P.success};color:#fff;}
 .ps-block-info{flex:1;min-width:0;}
-.ps-block-name{font-family:'Oswald',sans-serif;font-size:15px;font-weight:700;color:${P.textMuted};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ps-block-name{font-family:'Oswald',sans-serif;font-size:15px;font-weight:700;color:${P.textMuted};line-height:1.2;}
 .ps-block.cur .ps-block-name{color:${P.black};}
 .ps-block-time{font-size:10px;color:${P.textDim};margin-top:1px;font-weight:700;}
 .ps-block-dur{font-size:11px;color:${P.textDim};flex-shrink:0;font-weight:700;}
@@ -475,8 +475,11 @@ function PracticeSchedule({plan}){
                   <div key={gi} className={`ps-block${isCur?" cur":""}${isDone?" done":""}`} style={{marginBottom:0,borderLeftColor:c?c.border:P.border}}>
                     <div className="ps-block-hd" onClick={()=>setOpen(isOpen?null:gi)}>
                       <div className="ps-idx" style={!isCur&&!isDone&&c?{borderColor:c.border,color:c.text,background:c.bg}:{}}>{isDone?<Ico name="checkmark" size={13}/>:gi+1}</div>
-                      <div className="ps-block-info"><div className="ps-block-name" style={c&&!isCur?{color:c.text}:{}}>{b.label}</div><div className="ps-block-time">{b.start} – {b.end}</div></div>
-                      <div style={{display:"flex",alignItems:"center",gap:6}}><div className="ps-block-dur">{b.dur}m</div><button className={`ps-expand-btn${isOpen?" open":""}`} onClick={e=>{e.stopPropagation();setOpen(isOpen?null:gi);}}><Ico name={isOpen?"chevUp":"chevDown"} size={15}/>{isOpen?"Hide":"Details"}</button></div>
+                      <div className="ps-block-info">
+                        <div className="ps-block-name" style={c&&!isCur?{color:c.text}:{}}>{b.label}</div>
+                        <div className="ps-block-time">{b.start} – {b.end} · {b.dur}m</div>
+                      </div>
+                      <button className={`ps-expand-btn${isOpen?" open":""}`} onClick={e=>{e.stopPropagation();setOpen(isOpen?null:gi);}}><Ico name={isOpen?"chevUp":"chevDown"} size={15}/>{isOpen?"Hide":"Details"}</button>
                     </div>
                     {isOpen&&b.drill&&<BlockDetail b={{...b}}/>}
                   </div>
