@@ -47,6 +47,7 @@ const Ico = ({ name, size = 18, stroke = 1.7 }) => {
     home:      "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10",
     sun:       "M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41M12 7a5 5 0 1 0 0 10A5 5 0 0 0 12 7z",
     star:      "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z",
+    trophy:    "M8 21h8M12 17v4M17 3H7l1 7c0 2.21 1.79 4 4 4s4-1.79 4-4l1-7zM4 3h2M18 3h2M4 3c0 3 1 5 3 6M20 3c0 3-1 5-3 6",
     bat:       "M3 21l4-4M7 17L19 5a2 2 0 0 0-3-3L4 14M17 3l4 4",
   };
   return (
@@ -82,6 +83,22 @@ const BAT_COLOR={bg:"rgba(239,107,54,0.08)",border:"rgba(239,107,54,0.3)",text:"
 const BAT_DRILL={id:"batting",name:"Batting Practice",category:"Hitting",notes:"5 minutes per player hitting\nOn Deck: hitting off tee",players:0,duration:0,venue:"Both",video:""};
 const LOGO="/KMBA-Panthers-Logo_U8_Tier_1.png";
 
+// ─── Roster ───────────────────────────────────────────────────────────────────
+const ROSTER=[
+  {id:"p25", jersey:25, first:"Lawson",   last:"Buck"},
+  {id:"p6",  jersey:6,  first:"Ethan",    last:"Deitner"},
+  {id:"p7",  jersey:7,  first:"Ryker",    last:"Falconer"},
+  {id:"p28", jersey:28, first:"Eli",      last:"Herman"},
+  {id:"p22", jersey:22, first:"Leonardo", last:"Hoover"},
+  {id:"p11", jersey:11, first:"Riley",    last:"James"},
+  {id:"p17", jersey:17, first:"Declan",   last:"Kopysh"},
+  {id:"p98", jersey:98, first:"Jacob",    last:"Lannan"},
+  {id:"p46", jersey:46, first:"Samuel",   last:"Lannan"},
+  {id:"p10", jersey:10, first:"Carter",   last:"Mielke"},
+  {id:"p5",  jersey:5,  first:"Kevin",    last:"Puddephatt"},
+  {id:"p99", jersey:99, first:"Henri",    last:"Raymond"},
+];
+
 function matchesPlayerFilter(d,pf){
   if(pf==="Any")return true;const p=d.players||1;
   if(pf==="1–4")return p>=1&&p<=4;if(pf==="5–10")return p>=5&&p<=10;if(pf==="10+")return p>10;return true;
@@ -102,6 +119,8 @@ const SB_KEY=import.meta.env.VITE_SUPABASE_KEY;
 async function sbGet(table){try{const r=await fetch(`${SB_URL}/rest/v1/${table}?select=id,data`,{headers:{apikey:SB_KEY,Authorization:`Bearer ${SB_KEY}`}});const rows=await r.json();if(!Array.isArray(rows))return[];return rows.map(r=>r.data);}catch{return[];}}
 async function sbUpsert(table,id,data){try{await fetch(`${SB_URL}/rest/v1/${table}`,{method:"POST",headers:{apikey:SB_KEY,Authorization:`Bearer ${SB_KEY}`,"Content-Type":"application/json","Prefer":"resolution=merge-duplicates"},body:JSON.stringify({id,data})});}catch{}}
 async function sbDelete(table,id){try{await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`,{method:"DELETE",headers:{apikey:SB_KEY,Authorization:`Bearer ${SB_KEY}`}});}catch{}}
+async function sbGetMvp(){try{const r=await fetch(`${SB_URL}/rest/v1/mvp?select=id,data`,{headers:{apikey:SB_KEY,Authorization:`Bearer ${SB_KEY}`}});const rows=await r.json();if(!Array.isArray(rows))return{};const rec=rows[0];return rec?rec.data:{};}catch{return{};}}
+async function sbSaveMvp(counts){try{await fetch(`${SB_URL}/rest/v1/mvp`,{method:"POST",headers:{apikey:SB_KEY,Authorization:`Bearer ${SB_KEY}`,"Content-Type":"application/json","Prefer":"resolution=merge-duplicates"},body:JSON.stringify({id:1,data:counts})});}catch{}}
 function shareUrl(plan){return`${window.location.href.split("?")[0]}?share=${plan.date}`;}
 
 const load=(k,fb)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):fb;}catch{return fb;}};
@@ -369,6 +388,34 @@ body{background:${P.bg};font-family:'Nunito',sans-serif;color:${P.text};min-heig
 .ps-bat-col{min-width:0;word-break:break-word;}
 .ps-bat-note{white-space:normal;word-break:break-word;}
 ::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:${P.border};border-radius:3px;}
+
+/* ═══ MVP TAB ═════════════════════════════════════════════════════ */
+.mvp-top3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;}
+.mvp-podium{background:${P.surface};border-radius:12px;border:1.5px solid ${P.border};padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;}
+.mvp-podium.lead{border-color:${P.goldBorder};background:${P.goldDim};}
+.mvp-pod-rank{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:${P.textDim};display:flex;align-items:center;gap:3px;}
+.mvp-podium.lead .mvp-pod-rank{color:#a07800;}
+.mvp-avatar{width:36px;height:36px;border-radius:50%;background:${P.inputBg};border:2px solid ${P.border};display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;color:${P.steel};}
+.mvp-podium.lead .mvp-avatar{background:rgba(227,180,64,0.15);border-color:${P.goldBorder};color:#a07800;}
+.mvp-pod-name{font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;color:${P.black};text-align:center;line-height:1.2;}
+.mvp-pod-jersey{font-size:9px;color:${P.textDim};font-weight:700;}
+.mvp-pod-count{font-family:'Oswald',sans-serif;font-size:22px;font-weight:700;color:${P.steel};line-height:1;}
+.mvp-podium.lead .mvp-pod-count{color:${P.gold};}
+.mvp-row{background:${P.surface};border-radius:10px;border:1.5px solid ${P.border};padding:10px 12px;margin-bottom:7px;display:flex;align-items:center;gap:10px;}
+.mvp-row.lead{border-color:${P.goldBorder};background:${P.goldDim};}
+.mvp-jersey{width:30px;height:30px;border-radius:8px;background:${P.inputBg};display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-size:11px;font-weight:700;color:${P.steel};flex-shrink:0;border:1.5px solid ${P.border};}
+.mvp-row.lead .mvp-jersey{background:rgba(227,180,64,0.15);border-color:${P.goldBorder};color:#a07800;}
+.mvp-pname{flex:1;min-width:0;}
+.mvp-pfirst{font-size:13px;font-weight:800;color:${P.black};line-height:1;}
+.mvp-plast{font-size:10px;color:${P.textMuted};font-weight:700;margin-top:1px;}
+.mvp-bar-wrap{width:52px;height:5px;background:${P.inputBg};border-radius:3px;overflow:hidden;flex-shrink:0;}
+.mvp-bar{height:5px;background:${P.steel};border-radius:3px;transition:width 0.4s ease;}
+.mvp-row.lead .mvp-bar{background:${P.gold};}
+.mvp-count{font-family:'Oswald',sans-serif;font-size:17px;font-weight:700;color:${P.steel};width:20px;text-align:right;flex-shrink:0;}
+.mvp-row.lead .mvp-count{color:#a07800;}
+.mvp-award-btn{display:flex;align-items:center;gap:5px;background:${P.steel};color:#fff;border:none;border-radius:20px;padding:7px 13px;font-family:'Nunito',sans-serif;font-size:11px;font-weight:800;cursor:pointer;flex-shrink:0;transition:opacity 0.15s;-webkit-tap-highlight-color:transparent;}
+.mvp-award-btn:hover{opacity:0.85;}
+.mvp-season-chip{background:${P.goldDim};border:1.5px solid ${P.goldBorder};border-radius:20px;padding:5px 12px;font-size:11px;font-weight:800;color:#a07800;}
 `;
 
 // ─── Countdown ────────────────────────────────────────────────────────────────
@@ -524,6 +571,8 @@ export default function PracticePlanner(){
   const[tab,setTab]=useState("plans");
   const[drills,setDrills]=useState([]);
   const[plans,setPlans]=useState([]);
+  const[mvpCounts,setMvpCounts]=useState({});
+  const[undoMvp,setUndoMvp]=useState(null);
   const[recentIds,setRecentIds]=useState(()=>load("pp_recent",[]));
   const[loading,setLoading]=useState(true);
   const toast=useToast();
@@ -532,7 +581,7 @@ export default function PracticePlanner(){
   const[createPlayerFilter,setCreatePlayerFilter]=useState("Any");
   const[expandedPicks,setExpandedPicks]=useState({});
   useEffect(()=>save("pp_recent",recentIds),[recentIds]);
-  useEffect(()=>{async function go(){setLoading(true);const[d,p]=await Promise.all([sbGet("drills"),sbGet("plans")]);setDrills(d);setPlans(p);setLoading(false);}go();},[]);
+  useEffect(()=>{async function go(){setLoading(true);const[d,p,m]=await Promise.all([sbGet("drills"),sbGet("plans"),sbGetMvp()]);setDrills(d);setPlans(p);setMvpCounts(m||{});setLoading(false);}go();},[]);
 
   // Week strip
   const[weekBase,setWeekBase]=useState(()=>{const p=new URLSearchParams(window.location.search).get("share");return p||today;});
@@ -663,8 +712,28 @@ export default function PracticePlanner(){
     );
   }
 
+  // MVP fns
+  async function awardMvp(playerId){
+    const prev={...mvpCounts};
+    const next={...mvpCounts,[playerId]:(mvpCounts[playerId]||0)+1};
+    setMvpCounts(next);
+    await sbSaveMvp(next);
+    setUndoMvp(playerId);
+    const t=setTimeout(()=>setUndoMvp(null),4000);
+    toast.show("MVP awarded! Tap to undo");
+    return t;
+  }
+  async function undoAward(){
+    if(!undoMvp)return;
+    const next={...mvpCounts,[undoMvp]:Math.max(0,(mvpCounts[undoMvp]||1)-1)};
+    setMvpCounts(next);
+    await sbSaveMvp(next);
+    setUndoMvp(null);
+    toast.show("Undone");
+  }
+
   const selectedPlan=planMap[selectedDate]||null;
-  const navTabs=[{id:"drills",label:"Drills",icon:"dumbbell"},{id:"create",label:"Create",icon:"calPlus"},{id:"plans",label:"Plans",icon:"calDays"}];
+  const navTabs=[{id:"drills",label:"Drills",icon:"dumbbell"},{id:"create",label:"Create",icon:"calPlus"},{id:"plans",label:"Plans",icon:"calDays"},{id:"mvp",label:"MVP",icon:"trophy"}];
 
   return(
     <div className="app">
@@ -797,6 +866,62 @@ export default function PracticePlanner(){
           );
         })()}
 
+        {/* ══ MVP ══ */}
+        {tab==="mvp"&&(()=>{
+          const maxCount=Math.max(1,...ROSTER.map(p=>mvpCounts[p.id]||0));
+          const sorted=[...ROSTER].sort((a,b)=>(mvpCounts[b.id]||0)-(mvpCounts[a.id]||0));
+          const top3=sorted.slice(0,3);
+          return(<>
+            <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",marginBottom:14}}>
+              <div><div className="section-title">MVP Awards</div><div className="section-sub">Season leaderboard · {ROSTER.length} players</div></div>
+              <div className="mvp-season-chip">2026</div>
+            </div>
+
+            <div className="mvp-top3">
+              {[top3[1],top3[0],top3[2]].map((player,vi)=>{
+                if(!player)return<div key={vi}/>;
+                const ranks=["2nd","1st","3rd"];
+                const isLead=vi===1;
+                const count=mvpCounts[player.id]||0;
+                return(
+                  <div key={player.id} className={`mvp-podium${isLead?" lead":""}`}>
+                    <div className="mvp-pod-rank">
+                      {isLead&&<svg width="10" height="10" viewBox="0 0 24 24" fill="#e3b440" stroke="#a07800" strokeWidth="1.5" strokeLinecap="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>}
+                      {ranks[vi]}
+                    </div>
+                    <div className="mvp-avatar">{player.first[0]}{player.last[0]}</div>
+                    <div className="mvp-pod-name">{player.first}</div>
+                    <div className="mvp-pod-jersey">#{player.jersey}</div>
+                    <div className="mvp-pod-count">{count}</div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="divider-label">All Players</div>
+
+            {sorted.map((player,idx)=>{
+              const count=mvpCounts[player.id]||0;
+              const isLead=idx===0&&count>0;
+              const barPct=maxCount>0?Math.round((count/maxCount)*100):0;
+              return(
+                <div key={player.id} className={`mvp-row${isLead?" lead":""}`}>
+                  <div className="mvp-jersey">#{player.jersey}</div>
+                  <div className="mvp-pname">
+                    <div className="mvp-pfirst">{player.first} {player.last}</div>
+                  </div>
+                  <div className="mvp-bar-wrap"><div className="mvp-bar" style={{width:`${barPct}%`}}/></div>
+                  <div className="mvp-count" style={count===0?{color:P.textDim}:{}}>{count}</div>
+                  <button className="mvp-award-btn" style={isLead?{background:P.gold,color:"#111"}:{}} onClick={()=>awardMvp(player.id)}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                    MVP
+                  </button>
+                </div>
+              );
+            })}
+          </>);
+        })()}
+
       </div>
 
       <nav className="bottom-nav">
@@ -834,7 +959,7 @@ export default function PracticePlanner(){
         </div>
       </div>)}
 
-      {toast.msg&&<div className="toast">{toast.msg}</div>}
+      {toast.msg&&<div className="toast" onClick={undoMvp?undoAward:undefined} style={undoMvp?{cursor:"pointer"}:{}}>{toast.msg}</div>}
     </div>
   );
 }
