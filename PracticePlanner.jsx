@@ -86,7 +86,9 @@ const LOGO="/KMBA-Panthers-Logo_U8_Tier_1.png";
 // ─── Roster ───────────────────────────────────────────────────────────────────
 const ROSTER=[
   {id:"p25", jersey:25, first:"Lawson",   last:"Buck"},
+  {id:"p67", jersey:67, first:"Miles",    last:"Bell"},
   {id:"p6",  jersey:6,  first:"Ethan",    last:"Deitner"},
+  {id:"p12", jersey:12, first:"Max",      last:"Dorsch"},
   {id:"p7",  jersey:7,  first:"Ryker",    last:"Falconer"},
   {id:"p28", jersey:28, first:"Eli",      last:"Herman"},
   {id:"p22", jersey:22, first:"Leonardo", last:"Hoover"},
