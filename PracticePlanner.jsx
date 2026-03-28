@@ -123,6 +123,8 @@ async function sbUpsert(table,id,data){try{await fetch(`${SB_URL}/rest/v1/${tabl
 async function sbDelete(table,id){try{await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`,{method:"DELETE",headers:{apikey:SB_KEY,Authorization:`Bearer ${SB_KEY}`}});}catch{}}
 async function sbGetMvp(){try{const r=await fetch(`${SB_URL}/rest/v1/mvp?select=id,data`,{headers:{apikey:SB_KEY,Authorization:`Bearer ${SB_KEY}`}});const rows=await r.json();if(!Array.isArray(rows))return{};const rec=rows[0];return rec?rec.data:{};}catch{return{};}}
 async function sbSaveMvp(counts){try{await fetch(`${SB_URL}/rest/v1/mvp`,{method:"POST",headers:{apikey:SB_KEY,Authorization:`Bearer ${SB_KEY}`,"Content-Type":"application/json","Prefer":"resolution=merge-duplicates"},body:JSON.stringify({id:1,data:counts})});}catch{}}
+async function sbGetAttendance(){try{const r=await fetch(`${SB_URL}/rest/v1/attendance?select=id,data`,{headers:{apikey:SB_KEY,Authorization:`Bearer ${SB_KEY}`}});const rows=await r.json();if(!Array.isArray(rows))return{};const rec=rows[0];return rec?rec.data:{};}catch{return{};}}
+async function sbSaveAttendance(data){try{await fetch(`${SB_URL}/rest/v1/attendance`,{method:"POST",headers:{apikey:SB_KEY,Authorization:`Bearer ${SB_KEY}`,"Content-Type":"application/json","Prefer":"resolution=merge-duplicates"},body:JSON.stringify({id:1,data})});}catch{}}
 function shareUrl(plan){return`${window.location.href.split("?")[0]}?share=${plan.date}`;}
 
 const load=(k,fb)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):fb;}catch{return fb;}};
@@ -418,6 +420,16 @@ body{background:${P.bg};font-family:'Nunito',sans-serif;color:${P.text};min-heig
 .mvp-award-btn{display:flex;align-items:center;gap:5px;background:${P.steel};color:#fff;border:none;border-radius:20px;padding:7px 13px;font-family:'Nunito',sans-serif;font-size:11px;font-weight:800;cursor:pointer;flex-shrink:0;transition:opacity 0.15s;-webkit-tap-highlight-color:transparent;}
 .mvp-award-btn:hover{opacity:0.85;}
 .mvp-season-chip{background:${P.goldDim};border:1.5px solid ${P.goldBorder};border-radius:20px;padding:5px 12px;font-size:11px;font-weight:800;color:#a07800;}
+
+/* attendance */
+.att-date-bar{display:flex;align-items:center;gap:8px;background:${P.surface};border-radius:12px;border:1.5px solid ${P.border};padding:10px 13px;margin-bottom:12px;}
+.att-date-label{font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;color:${P.black};flex:1;}
+.att-summary{font-size:11px;font-weight:800;color:${P.steel};background:${P.steelLight};border-radius:20px;padding:4px 10px;white-space:nowrap;}
+.att-check{width:32px;height:32px;border-radius:8px;border:1.5px solid ${P.border};background:${P.inputBg};display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all 0.15s;-webkit-tap-highlight-color:transparent;}
+.att-check.present{background:${P.success};border-color:${P.success};}
+.att-tab-btns{display:flex;gap:0;margin-bottom:14px;background:${P.inputBg};border-radius:10px;padding:3px;}
+.att-tab-btn{flex:1;padding:7px;border:none;background:transparent;border-radius:8px;font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;color:${P.textMuted};cursor:pointer;transition:all 0.15s;}
+.att-tab-btn.active{background:${P.surface};color:${P.steel};border:1.5px solid ${P.border};}
 `;
 
 // ─── Countdown ────────────────────────────────────────────────────────────────
@@ -431,6 +443,23 @@ function useCountdown({totalSeconds,running,onExpire}){
 }
 
 // ─── Practice Schedule ────────────────────────────────────────────────────────
+function playAlarm(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    function beep(start,freq=880,dur=0.18){
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.connect(g);g.connect(ctx.destination);
+      o.frequency.value=freq;o.type="sine";
+      g.gain.setValueAtTime(0,start);
+      g.gain.linearRampToValueAtTime(0.5,start+0.01);
+      g.gain.linearRampToValueAtTime(0,start+dur);
+      o.start(start);o.stop(start+dur+0.05);
+    }
+    beep(ctx.currentTime);
+    beep(ctx.currentTime+0.22);
+  }catch{}
+}
+
 function PracticeSchedule({plan}){
   const blocks=buildSchedule(plan.start||"17:00",plan.drills||[],plan.warmupDrill||null,plan.cooldownDrill||null);
   const hasBat=!!plan.battingParallel;
@@ -441,7 +470,7 @@ function PracticeSchedule({plan}){
   const[done,setDone]=useState(false);
   const[expired,setExpired]=useState(false);
   const currentDur=started&&!done?blocks[cur].dur*60:0;
-  const handleExpire=useCallback(()=>setExpired(true),[]);
+  const handleExpire=useCallback(()=>{setExpired(true);playAlarm();},[]);
   const secsLeft=useCountdown({totalSeconds:currentDur,running,onExpire:handleExpire});
   function launch(i){setExpired(false);setCur(i);setRunning(true);setOpen(i);}
   function goNext(){setRunning(false);const n=cur+1;if(n<blocks.length)setTimeout(()=>launch(n),50);else setDone(true);}
@@ -575,6 +604,9 @@ export default function PracticePlanner(){
   const[plans,setPlans]=useState([]);
   const[mvpCounts,setMvpCounts]=useState({});
   const[undoMvp,setUndoMvp]=useState(null);
+  const[attendance,setAttendance]=useState({});
+  const[attDate,setAttDate]=useState(()=>new Date().toISOString().split("T")[0]);
+  const[mvpSubTab,setMvpSubTab]=useState("mvp");
   const[recentIds,setRecentIds]=useState(()=>load("pp_recent",[]));
   const[loading,setLoading]=useState(true);
   const toast=useToast();
@@ -583,7 +615,7 @@ export default function PracticePlanner(){
   const[createPlayerFilter,setCreatePlayerFilter]=useState("Any");
   const[expandedPicks,setExpandedPicks]=useState({});
   useEffect(()=>save("pp_recent",recentIds),[recentIds]);
-  useEffect(()=>{async function go(){setLoading(true);const[d,p,m]=await Promise.all([sbGet("drills"),sbGet("plans"),sbGetMvp()]);setDrills(d);setPlans(p);setMvpCounts(m||{});setLoading(false);}go();},[]);
+  useEffect(()=>{async function go(){setLoading(true);const[d,p,m,a]=await Promise.all([sbGet("drills"),sbGet("plans"),sbGetMvp(),sbGetAttendance()]);setDrills(d);setPlans(p);setMvpCounts(m||{});setAttendance(a||{});setLoading(false);}go();},[]);
 
   // Week strip
   const[weekBase,setWeekBase]=useState(()=>{const p=new URLSearchParams(window.location.search).get("share");return p||today;});
@@ -712,6 +744,15 @@ export default function PracticePlanner(){
         {!val&&filtered.length===0&&<div style={{fontSize:12,color:P.textDim,marginTop:10,fontWeight:600}}>No {filterCat} drills yet — add some in the Drills tab.</div>}
       </div>
     );
+  }
+
+  // Attendance fns
+  async function toggleAttendance(playerId){
+    const dayRec={...(attendance[attDate]||{})};
+    dayRec[playerId]=!dayRec[playerId];
+    const next={...attendance,[attDate]:dayRec};
+    setAttendance(next);
+    await sbSaveAttendance(next);
   }
 
   // MVP fns
@@ -873,54 +914,133 @@ export default function PracticePlanner(){
           const maxCount=Math.max(1,...ROSTER.map(p=>mvpCounts[p.id]||0));
           const sorted=[...ROSTER].sort((a,b)=>(mvpCounts[b.id]||0)-(mvpCounts[a.id]||0));
           const top3=sorted.slice(0,3);
+          const dayRec=attendance[attDate]||{};
+          const presentCount=ROSTER.filter(p=>dayRec[p.id]).length;
+          // calc attendance rate per player across all dates
+          const allDates=Object.keys(attendance);
+          const practiceDates=allDates.filter(d=>attendance[d]&&Object.keys(attendance[d]).length>0);
           return(<>
-            <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",marginBottom:14}}>
-              <div><div className="section-title">MVP Awards</div><div className="section-sub">Season leaderboard · {ROSTER.length} players</div></div>
-              <div className="mvp-season-chip">2026</div>
+            <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",marginBottom:12}}>
+              <div><div className="section-title">{mvpSubTab==="mvp"?"MVP Awards":"Attendance"}</div><div className="section-sub">{mvpSubTab==="mvp"?`Season leaderboard · ${ROSTER.length} players`:`${practiceDates.length} practice${practiceDates.length!==1?"s":""} tracked`}</div></div>
+              {mvpSubTab==="mvp"&&<div className="mvp-season-chip">2026</div>}
             </div>
 
-            <div className="mvp-top3">
-              {[top3[1],top3[0],top3[2]].map((player,vi)=>{
-                if(!player)return<div key={vi}/>;
-                const ranks=["2nd","1st","3rd"];
-                const isLead=vi===1;
-                const count=mvpCounts[player.id]||0;
-                return(
-                  <div key={player.id} className={`mvp-podium${isLead?" lead":""}`}>
-                    <div className="mvp-pod-rank">
-                      {isLead&&<svg width="10" height="10" viewBox="0 0 24 24" fill="#e3b440" stroke="#a07800" strokeWidth="1.5" strokeLinecap="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>}
-                      {ranks[vi]}
+            {/* Sub-tab switcher */}
+            <div className="att-tab-btns">
+              <button className={`att-tab-btn${mvpSubTab==="mvp"?" active":""}`} onClick={()=>setMvpSubTab("mvp")}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{marginRight:5,verticalAlign:"middle"}}><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                MVP
+              </button>
+              <button className={`att-tab-btn${mvpSubTab==="att"?" active":""}`} onClick={()=>setMvpSubTab("att")}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{marginRight:5,verticalAlign:"middle"}}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                Attendance
+              </button>
+            </div>
+
+            {/* ── MVP sub-tab ── */}
+            {mvpSubTab==="mvp"&&(<>
+              <div className="mvp-top3">
+                {[top3[1],top3[0],top3[2]].map((player,vi)=>{
+                  if(!player)return<div key={vi}/>;
+                  const ranks=["2nd","1st","3rd"];
+                  const isLead=vi===1;
+                  const count=mvpCounts[player.id]||0;
+                  return(
+                    <div key={player.id} className={`mvp-podium${isLead?" lead":""}`}>
+                      <div className="mvp-pod-rank">
+                        {isLead&&<svg width="10" height="10" viewBox="0 0 24 24" fill="#e3b440" stroke="#a07800" strokeWidth="1.5" strokeLinecap="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>}
+                        {ranks[vi]}
+                      </div>
+                      <div className="mvp-avatar">{player.first[0]}{player.last[0]}</div>
+                      <div className="mvp-pod-name">{player.first}</div>
+                      <div className="mvp-pod-jersey">#{player.jersey}</div>
+                      <div className="mvp-pod-count">{count}</div>
                     </div>
-                    <div className="mvp-avatar">{player.first[0]}{player.last[0]}</div>
-                    <div className="mvp-pod-name">{player.first}</div>
-                    <div className="mvp-pod-jersey">#{player.jersey}</div>
-                    <div className="mvp-pod-count">{count}</div>
+                  );
+                })}
+              </div>
+              <div className="divider-label">All Players</div>
+              {sorted.map((player,idx)=>{
+                const count=mvpCounts[player.id]||0;
+                const isLead=idx===0&&count>0;
+                const barPct=maxCount>0?Math.round((count/maxCount)*100):0;
+                return(
+                  <div key={player.id} className={`mvp-row${isLead?" lead":""}`}>
+                    <div className="mvp-jersey">#{player.jersey}</div>
+                    <div className="mvp-pname"><div className="mvp-pfirst">{player.first} {player.last}</div></div>
+                    <div className="mvp-bar-wrap"><div className="mvp-bar" style={{width:`${barPct}%`}}/></div>
+                    <div className="mvp-count" style={count===0?{color:P.textDim}:{}}>{count}</div>
+                    <button className="mvp-award-btn" style={isLead?{background:P.gold,color:"#111"}:{}} onClick={()=>awardMvp(player.id)}>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                      MVP
+                    </button>
                   </div>
                 );
               })}
-            </div>
+            </>)}
 
-            <div className="divider-label">All Players</div>
-
-            {sorted.map((player,idx)=>{
-              const count=mvpCounts[player.id]||0;
-              const isLead=idx===0&&count>0;
-              const barPct=maxCount>0?Math.round((count/maxCount)*100):0;
-              return(
-                <div key={player.id} className={`mvp-row${isLead?" lead":""}`}>
-                  <div className="mvp-jersey">#{player.jersey}</div>
-                  <div className="mvp-pname">
-                    <div className="mvp-pfirst">{player.first} {player.last}</div>
-                  </div>
-                  <div className="mvp-bar-wrap"><div className="mvp-bar" style={{width:`${barPct}%`}}/></div>
-                  <div className="mvp-count" style={count===0?{color:P.textDim}:{}}>{count}</div>
-                  <button className="mvp-award-btn" style={isLead?{background:P.gold,color:"#111"}:{}} onClick={()=>awardMvp(player.id)}>
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
-                    MVP
-                  </button>
+            {/* ── Attendance sub-tab ── */}
+            {mvpSubTab==="att"&&(<>
+              {/* Date picker + summary */}
+              <div className="att-date-bar">
+                <div style={{display:"flex",flexDirection:"column",flex:1}}>
+                  <div style={{fontSize:10,fontWeight:800,textTransform:"uppercase",letterSpacing:1,color:P.textDim,marginBottom:4}}>Practice Date</div>
+                  <input type="date" className="input" style={{padding:"7px 10px",fontSize:13,fontWeight:700}} value={attDate} onChange={e=>setAttDate(e.target.value)}/>
                 </div>
-              );
-            })}
+                <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,flexShrink:0}}>
+                  <div style={{fontFamily:"'Oswald',sans-serif",fontSize:22,fontWeight:700,color:P.steel,lineHeight:1}}>{presentCount}</div>
+                  <div style={{fontSize:9,fontWeight:800,color:P.textDim,textTransform:"uppercase",letterSpacing:0.5}}>of {ROSTER.length}</div>
+                  <div style={{fontSize:9,fontWeight:800,color:P.textDim,textTransform:"uppercase",letterSpacing:0.5}}>present</div>
+                </div>
+              </div>
+
+              {/* Mark all / clear all */}
+              <div style={{display:"flex",gap:8,marginBottom:12}}>
+                <button className="btn btn-ghost btn-sm btn-full" onClick={async()=>{const next={...attendance,[attDate]:Object.fromEntries(ROSTER.map(p=>[p.id,true]))};setAttendance(next);await sbSaveAttendance(next);}}>Mark All Present</button>
+                <button className="btn btn-ghost btn-sm btn-full" onClick={async()=>{const next={...attendance,[attDate]:{}};setAttendance(next);await sbSaveAttendance(next);}}>Clear All</button>
+              </div>
+
+              <div className="divider-label">Tap to mark present</div>
+
+              {ROSTER.map(player=>{
+                const isPresent=!!(dayRec[player.id]);
+                const totalPresent=practiceDates.filter(d=>attendance[d]&&attendance[d][player.id]).length;
+                const rate=practiceDates.length>0?Math.round((totalPresent/practiceDates.length)*100):0;
+                return(
+                  <div key={player.id} className="mvp-row" style={isPresent?{borderColor:P.success,background:"rgba(61,186,122,0.06)"}:{}}>
+                    <div className="mvp-jersey" style={isPresent?{background:"rgba(61,186,122,0.15)",borderColor:P.success,color:"#1a7a4a"}:{}}> #{player.jersey}</div>
+                    <div className="mvp-pname">
+                      <div className="mvp-pfirst">{player.first} {player.last}</div>
+                      <div style={{fontSize:10,color:P.textDim,fontWeight:700,marginTop:2}}>{practiceDates.length>0?`${rate}% attendance · ${totalPresent}/${practiceDates.length}`:"No data yet"}</div>
+                    </div>
+                    <button className={`att-check${isPresent?" present":""}`} onClick={()=>toggleAttendance(player.id)}>
+                      {isPresent&&<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><path d="M7 13l3 3 7-7"/></svg>}
+                    </button>
+                  </div>
+                );
+              })}
+
+              {practiceDates.length>1&&(<>
+                <div className="divider-label" style={{marginTop:16}}>Season Attendance</div>
+                {[...ROSTER].sort((a,b)=>{
+                  const ra=practiceDates.filter(d=>attendance[d]&&attendance[d][a.id]).length;
+                  const rb=practiceDates.filter(d=>attendance[d]&&attendance[d][b.id]).length;
+                  return rb-ra;
+                }).map(player=>{
+                  const totalPresent=practiceDates.filter(d=>attendance[d]&&attendance[d][player.id]).length;
+                  const rate=Math.round((totalPresent/practiceDates.length)*100);
+                  const barPct=rate;
+                  return(
+                    <div key={player.id} className="mvp-row" style={{padding:"8px 12px"}}>
+                      <div className="mvp-jersey">#{player.jersey}</div>
+                      <div className="mvp-pname"><div className="mvp-pfirst">{player.first} {player.last}</div></div>
+                      <div className="mvp-bar-wrap" style={{width:60}}><div className="mvp-bar" style={{width:`${barPct}%`,background:rate>=80?P.success:rate>=60?P.steel:P.danger}}/></div>
+                      <div className="mvp-count" style={{fontSize:13,color:rate>=80?P.success:rate>=60?P.steel:P.danger}}>{rate}%</div>
+                    </div>
+                  );
+                })}
+              </>)}
+            </>)}
           </>);
         })()}
 
