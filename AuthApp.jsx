@@ -218,7 +218,7 @@ export default function AuthApp() {
   if (loading) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f4f6f9" }}><p>Loading...</p></div>;
   if (!user) return <LoginScreen onLogin={(u) => setUser(u)} />;
   if (teamCreated === null) return <div style={{padding:50, textAlign:"center"}}>Loading...</div>;
-  if (teamCreated === false) return <CreateTeam user={user} onCreated={() => setTeamCreated(true)} />;
+  if (!teamCreated) return <CreateTeam user={user} onCreated={() => setTeamCreated(true)} />;
 
   // Drill form state
   const [showDrillForm, setShowDrillForm] = useState(false);
