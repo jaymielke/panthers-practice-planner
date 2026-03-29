@@ -7,6 +7,11 @@ const SB_KEY = import.meta.env.VITE_SUPABASE_KEY;
 const supabase = createClient(SB_URL, SB_KEY);
 const APP_URL = "https://panthers-practice-planner.vercel.app";
 
+// Force redirect if share param exists
+if (typeof window !== "undefined" && window.location.search.includes("share=")) {
+  window.location.href = APP_URL;
+}
+
 function LoginScreen({ onLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -15,12 +20,6 @@ function LoginScreen({ onLogin }) {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
-
-  useEffect(() => {
-    if (window.location.search.includes("share=")) {
-      window.history.replaceState({}, "", APP_URL);
-    }
-  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -126,9 +125,6 @@ export default function AuthApp() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (window.location.search.includes("share=")) {
-      window.history.replaceState({}, "", APP_URL);
-    }
     supabase.auth.getSession().then(({ data: { session } }) => { setUser(session?.user ?? null); setLoading(false); });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => { setUser(session?.user ?? null); });
     return () => subscription.unsubscribe();
