@@ -184,7 +184,16 @@ function CreateTeam({ user, onCreated }) {
 export default function AuthApp() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [teamCreated, setTeamCreated] = useState(false);
+  const [teamCreated, setTeamCreated] = useState(null); // null = loading, false = no team, true = has team
+
+  // Check for existing team on load
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase.from('teams').select('*').eq('user_id', user.id).limit(1).then(({ data }) => {
+      if (data && data.length > 0) setTeamCreated(true);
+      else setTeamCreated(false);
+    });
+  }, [user]);
 
   useEffect(() => {
     // Clear the share param on load
@@ -208,7 +217,7 @@ export default function AuthApp() {
 
   if (loading) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f4f6f9" }}><p>Loading...</p></div>;
   if (!user) return <LoginScreen onLogin={(u) => setUser(u)} />;
-  if (!teamCreated) return <CreateTeam user={user} onCreated={() => setTeamCreated(true)} />;
+  if (teamCreated === null) return <div style={{padding:50, textAlign:"center"}}>Loading...</div> <CreateTeam user={user} onCreated={() => setTeamCreated(true)} />;
 
   // Drill form state
   const [showDrillForm, setShowDrillForm] = useState(false);
