@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
+import PracticePlanner from "./PracticePlanner.jsx";
 
 const SB_URL = import.meta.env.VITE_SUPABASE_URL;
 const SB_KEY = import.meta.env.VITE_SUPABASE_KEY;
@@ -72,27 +73,6 @@ export default function AuthApp() {
   if (loading) return <div style={{minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f4f6f9"}}><p>Loading...</p></div>;
   if (!user) return <LoginScreen onLogin={(u) => setUser(u)} />;
 
-  return (
-    <div style={{minHeight: "100vh", background: "#f4f6f9"}}>
-      <div style={{padding: 16, background: "white", borderBottom: "3px solid #e3b440", display: "flex", justifyContent: "space-between", alignItems: "center"}}>
-        <div>
-          <h1 style={{fontFamily: "'Oswald', sans-serif", fontSize: 20, margin: 0}}>⚾ PracticePro</h1>
-          <p style={{fontSize: 12, color: "#7a92a8", margin: 0}}>Welcome, {user.email}</p>
-        </div>
-        <button onClick={handleLogout} style={{padding: "8px 16px", background: "#eee", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 700}}>Sign Out</button>
-      </div>
-      <div style={{padding: 20}}>
-        <div style={{background: "white", padding: 24, borderRadius: 16, marginBottom: 16}}>
-          <h2 style={{fontFamily: "'Oswald', sans-serif", fontSize: 22, marginBottom: 8}}>Your Team</h2>
-          <p style={{color: "#7a92a8"}}>Create your first team to get started!</p>
-          <button style={{padding: "12px 24px", background: "#5f8db5", color: "white", border: "none", borderRadius: 8, fontWeight: 700, marginTop: 12, cursor: "pointer"}}>+ Create Team</button>
-        </div>
-        <div style={{background: "white", padding: 24, borderRadius: 16}}>
-          <h2 style={{fontFamily: "'Oswald', sans-serif", fontSize: 22, marginBottom: 8}}>Drills</h2>
-          <p style={{color: "#7a92a8"}}>Save drills from TikTok, Instagram & YouTube</p>
-          <p style={{fontSize: 12, color: "#aaa", marginTop: 12}}>Free tier: 5 drills remaining</p>
-        </div>
-      </div>
-    </div>
-  );
+  // After login, show the ORIGINAL app
+  return <PracticePlanner user={user} onLogout={handleLogout} />;
 }
