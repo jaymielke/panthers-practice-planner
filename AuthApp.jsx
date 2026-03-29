@@ -16,6 +16,12 @@ function LoginScreen({ onLogin }) {
   const [showForgot, setShowForgot] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
 
+  useEffect(() => {
+    if (window.location.search.includes("share=")) {
+      window.history.replaceState({}, "", APP_URL);
+    }
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -120,6 +126,9 @@ export default function AuthApp() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (window.location.search.includes("share=")) {
+      window.history.replaceState({}, "", APP_URL);
+    }
     supabase.auth.getSession().then(({ data: { session } }) => { setUser(session?.user ?? null); setLoading(false); });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => { setUser(session?.user ?? null); });
     return () => subscription.unsubscribe();
