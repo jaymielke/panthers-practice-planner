@@ -200,8 +200,12 @@ export default function AuthApp() {
     if (window.location.search.includes("share=")) {
       window.history.replaceState({}, "", APP_URL);
     }
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      const currentUser = session?.user ?? {id: "test-user"};
+      setUser(currentUser);
+      // Check for team
+      const { data: teams } = await supabase.from('teams').select('*').eq('user_id', currentUser.id).limit(1);
+      setTeamCreated(teams && teams.length > 0);
       setLoading(false);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -216,7 +220,7 @@ export default function AuthApp() {
   };
 
   if (loading) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f4f6f9" }}><p>Loading...</p></div>;
-  if (!user) return <LoginScreen onLogin={(u) => setUser(u)} />;
+  if (!user) return <LoginScreen onLogin={async (u) => { setUser(u); const { data: teams } = await supabase.from("teams").select("*").eq("user_id", u.id).limit(1); setTeamCreated(teams && teams.length > 0); }} />;
   if (teamCreated === null) return <div style={{padding:50, textAlign:"center"}}>Loading...</div>;
   if (!teamCreated) return <CreateTeam user={user} onCreated={() => setTeamCreated(true)} />;
 
