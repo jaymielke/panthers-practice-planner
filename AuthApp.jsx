@@ -5,6 +5,7 @@ import PracticePlanner from "./PracticePlanner.jsx";
 const SB_URL = import.meta.env.VITE_SUPABASE_URL;
 const SB_KEY = import.meta.env.VITE_SUPABASE_KEY;
 const supabase = createClient(SB_URL, SB_KEY);
+const APP_URL = "https://panthers-practice-planner.vercel.app";
 
 function LoginScreen({ onLogin }) {
   const [email, setEmail] = useState("");
@@ -39,7 +40,7 @@ function LoginScreen({ onLogin }) {
     setError("");
     try {
       const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: "https://panthers-practice-planner.vercel.app"
+        redirectTo: APP_URL
       });
       if (error) throw error;
       setForgotSent(true);
@@ -54,7 +55,7 @@ function LoginScreen({ onLogin }) {
           <div style={{background: "white", padding: 40, borderRadius: 16, width: "100%", maxWidth: 400, boxShadow: "0 4px 20px rgba(0,0,0,0.1)"}}>
             <h1 style={{fontFamily: "'Oswald', sans-serif", fontSize: 24, color: "#111", marginBottom: 8, textAlign: "center"}}>Check Your Email</h1>
             <p style={{color: "#7a92a8", textAlign: "center"}}>We sent a password reset link to your email.</p>
-            <button onClick={() => setShowForgot(false)} style={{marginTop: 20, width: "100%", padding: 14, background: "#5f8db5", color: "white", border: "none", borderRadius: 8, fontSize: 16, fontWeight: 700, cursor: "pointer"}}>Back to Login</button>
+            <button onClick={() => { setShowForgot(false); setForgotSent(false); }} style={{marginTop: 20, width: "100%", padding: 14, background: "#5f8db5", color: "white", border: "none", borderRadius: 8, fontSize: 16, fontWeight: 700, cursor: "pointer"}}>Back to Login</button>
           </div>
         </div>
       );
