@@ -7,7 +7,6 @@ const SB_KEY = import.meta.env.VITE_SUPABASE_KEY;
 const supabase = createClient(SB_URL, SB_KEY);
 const APP_URL = "https://panthers-practice-planner.vercel.app";
 
-// Force redirect if share param exists
 if (typeof window !== "undefined" && window.location.search.includes("share=")) {
   window.location.href = APP_URL;
 }
@@ -51,6 +50,11 @@ function LoginScreen({ onLogin }) {
       setForgotSent(true);
     } catch (err) { setError(err.message); }
     finally { setLoading(false); }
+  };
+
+  // DEBUG: Skip login for testing
+  const handleSkipLogin = () => {
+    onLogin({ id: "debug-user", email: "test@test.com" });
   };
 
   if (showForgot) {
@@ -112,9 +116,14 @@ function LoginScreen({ onLogin }) {
             <button onClick={() => setShowForgot(true)} style={{background: "none", border: "none", color: "#5f8db5", fontWeight: 700, cursor: "pointer"}}>Forgot Password?</button>
           </p>
         )}
-        <p style={{textAlign: "center", fontSize: 14, color: "#7a92a8"}}>
+        <p style={{textAlign: "center", fontSize: 14, color: "#7a92a8", marginBottom: 20}}>
           {isSignUp ? "Already have an account?" : "Don't have an account?"} <button type="button" onClick={() => setIsSignUp(!isSignUp)} style={{background: "none", border: "none", color: "#5f8db5", fontWeight: 700, cursor: "pointer"}}>{isSignUp ? "Sign In" : "Sign Up"}</button>
         </p>
+        
+        {/* DEBUG BUTTON - REMOVE LATER */}
+        <button onClick={handleSkipLogin} style={{width: "100%", padding: 10, background: "#ddd", border: "none", borderRadius: 8, fontSize: 12, color: "#666", marginTop: 20, cursor: "pointer"}}>
+          🔧 Skip Login (Testing)
+        </button>
       </div>
     </div>
   );
