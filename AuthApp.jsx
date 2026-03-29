@@ -6,13 +6,19 @@ const SB_URL = import.meta.env.VITE_SUPABASE_URL;
 const SB_KEY = import.meta.env.VITE_SUPABASE_KEY;
 const supabase = createClient(SB_URL, SB_KEY);
 
+// Match PracticePro color palette
+const P = {
+  steel: "#5f8db5", gold: "#e3b440", surface: "#ffffff", bg: "#f4f6f9",
+  border: "#dde3eb", text: "#1a2535", textMuted: "#7a92a8"
+};
+
 function LoginScreen({ onLogin }) {
   return (
-    <div style={{minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f4f6f9", padding: 20}}>
-      <div style={{background: "white", padding: 40, borderRadius: 16, width: "100%", maxWidth: 400}}>
-        <h1 style={{fontFamily: "'Oswald', sans-serif", fontSize: 28, textAlign: "center"}}>⚾ PracticePro</h1>
-        <p style={{color: "#7a92a8", textAlign: "center", marginBottom: 30}}>Sign in</p>
-        <button onClick={() => onLogin({ id: "test-user", email: "test@test.com" })} style={{width: "100%", padding: 14, background: "#5f8db5", color: "white", border: "none", borderRadius: 8, fontSize: 16, fontWeight: 700, cursor: "pointer"}}>🔧 SKIP LOGIN (TEST)</button>
+    <div style={{minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: P.bg, padding: 20}}>
+      <div style={{background: P.surface, padding: 40, borderRadius: 14, width: "100%", maxWidth: 400, border: `1.5px solid ${P.border}`}}>
+        <h1 style={{fontFamily: "'Oswald', sans-serif", fontSize: 28, textAlign: "center", color: P.text}}>⚾ PracticePro</h1>
+        <p style={{color: P.textMuted, textAlign: "center", marginBottom: 30}}>Sign in</p>
+        <button onClick={() => onLogin({ id: "test-user", email: "test@test.com" })} style={{width: "100%", padding: 14, background: P.steel, color: "white", border: "none", borderRadius: 9, fontSize: 16, fontWeight: 700, cursor: "pointer"}}>🔧 SKIP LOGIN (TEST)</button>
       </div>
     </div>
   );
@@ -37,14 +43,17 @@ function CreateTeam({ user, onCreated }) {
   };
 
   return (
-    <div style={{minHeight: "100vh", background: "#f4f6f9", padding: 20}}>
-      <div style={{background: "white", padding: 30, borderRadius: 16, maxWidth: 500, margin: "0 auto"}}>
-        <h1 style={{fontFamily: "'Oswald', sans-serif", fontSize: 24}}>Create Your Team</h1>
+    <div style={{minHeight: "100vh", background: P.bg, padding: 16}}>
+      <div style={{background: P.surface, padding: 18, borderRadius: 14, border: `1.5px solid ${P.border}`, maxWidth: 500, margin: "0 auto"}}>
+        <h1 style={{fontFamily: "'Oswald', sans-serif", fontSize: 24, marginBottom: 14}}>Create Your Team</h1>
         <form onSubmit={handleSubmit}>
-          <input value={teamName} onChange={e => setTeamName(e.target.value)} placeholder="Team Name" required style={{width: "100%", padding: 12, marginBottom: 12, borderRadius: 8, border: "1px solid #ddd"}} />
-          <input value={season} onChange={e => setSeason(e.target.value)} placeholder="Season" required style={{width: "100%", padding: 12, marginBottom: 12, borderRadius: 8, border: "1px solid #ddd"}} />
-          <textarea value={players} onChange={e => setPlayers(e.target.value)} placeholder="jersey, first, last" rows={5} style={{width: "100%", padding: 12, marginBottom: 12, borderRadius: 8, border: "1px solid #ddd"}} />
-          <button type="submit" disabled={loading} style={{width: "100%", padding: 14, background: "#5f8db5", color: "white", border: "none", borderRadius: 8, fontWeight: 700}}>{loading ? "Saving..." : "Create Team"}</button>
+          <div className="field"><label className="label">Team Name</label>
+          <input className="input" value={teamName} onChange={e => setTeamName(e.target.value)} placeholder="e.g., Panthers" required /></div>
+          <div className="field"><label className="label">Season</label>
+          <input className="input" value={season} onChange={e => setSeason(e.target.value)} placeholder="e.g., 2026 Spring" required /></div>
+          <div className="field"><label className="label">Players (jersey, first, last)</label>
+          <textarea className="textarea" value={players} onChange={e => setPlayers(e.target.value)} placeholder="25,Lawson,Buck&#10;67,Miles,Bell" rows={5} /></div>
+          <button type="submit" disabled={loading} style={{width: "100%", padding: 14, background: P.steel, color: "white", border: "none", borderRadius: 9, fontWeight: 700}}>{loading ? "Saving..." : "Create Team"}</button>
         </form>
       </div>
     </div>
@@ -68,19 +77,24 @@ function AddDrillForm({ user, onSaved }) {
   };
 
   return (
-    <div style={{background: "white", padding: 20, borderRadius: 12, marginTop: 20}}>
-      <h2>Add Your Drill</h2>
+    <div className="card">
+      <div className="card-title">Add Your Drill</div>
       <form onSubmit={handleSubmit}>
-        <input value={name} onChange={e => setName(e.target.value)} placeholder="Drill Name" required style={{width: "100%", padding: 8, marginBottom: 8, borderRadius: 6, border: "1px solid #ddd"}} />
-        <input value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder="TikTok/YouTube/Instagram Link" style={{width: "100%", padding: 8, marginBottom: 8, borderRadius: 6, border: "1px solid #ddd"}} />
-        <select value={category} onChange={e => setCategory(e.target.value)} style={{width: "100%", padding: 8, marginBottom: 8, borderRadius: 6, border: "1px solid #ddd"}}>
-          <option>Hitting</option><option>Fielding</option><option>Throwing</option><option>Running</option><option>Warmup</option><option>Cool Down</option>
-        </select>
-        <select value={duration} onChange={e => setDuration(e.target.value)} style={{width: "100%", padding: 8, marginBottom: 8, borderRadius: 6, border: "1px solid #ddd"}}>
-          <option value="10">10 min</option><option value="15">15 min</option><option value="20">20 min</option><option value="30">30 min</option>
-        </select>
-        <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notes" rows={2} style={{width: "100%", padding: 8, marginBottom: 8, borderRadius: 6, border: "1px solid #ddd"}} />
-        <button type="submit" disabled={loading} style={{padding: "10px 20px", background: "#5f8db5", color: "white", border: "none", borderRadius: 8}}>{loading ? "Saving..." : "Save Drill"}</button>
+        <div className="field"><label className="label">Drill Name</label>
+        <input className="input" value={name} onChange={e => setName(e.target.value)} placeholder="e.g., Tee Work" required /></div>
+        <div className="field"><label className="label">Video Link (TikTok/YouTube)</label>
+        <input className="input" value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder="https://..." /></div>
+        <div className="row2"><div className="field"><label className="label">Category</label>
+          <select className="select" value={category} onChange={e => setCategory(e.target.value)}>
+            <option>Hitting</option><option>Fielding</option><option>Throwing</option><option>Running</option><option>Warmup</option><option>Cool Down</option>
+          </select></div>
+          <div className="field"><label className="label">Duration</label>
+          <select className="select" value={duration} onChange={e => setDuration(e.target.value)}>
+            <option value="10">10 min</option><option value="15">15 min</option><option value="20">20 min</option><option value="30">30 min</option>
+          </select></div></div>
+        <div className="field"><label className="label">Notes</label>
+        <textarea className="textarea" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Tips for this drill..." rows={2} /></div>
+        <button type="submit" disabled={loading} style={{padding: "11px 20px", background: P.steel, color: "white", border: "none", borderRadius: 9, fontWeight: 700, width: "100%"}}>{loading ? "Saving..." : "Save Drill"}</button>
       </form>
     </div>
   );
@@ -96,27 +110,35 @@ function CommunityDrills({ user, onAddToMine }) {
 
   const filtered = category === "All" ? drills : drills.filter(d => d.category === category);
 
+  const getCatColor = (cat) => {
+    const colors = { Hitting: "#ef6b36", Fielding: "#3bb980", Throwing: "#6495ed", Running: "#c89b00", Warmup: "#9377e6", "Cool Down": "#7891a5" };
+    return colors[cat] || "#5f8db5";
+  };
+
   return (
-    <div style={{background: "white", padding: 20, borderRadius: 12, marginTop: 20}}>
-      <h2>🌐 Community Drills</h2>
-      <p style={{color: "#666", marginBottom: 15}}>Browse drills other coaches have saved!</p>
-      <select value={category} onChange={e => setCategory(e.target.value)} style={{padding: 8, marginBottom: 15, borderRadius: 6, border: "1px solid #ddd"}}>
-        <option value="All">All Categories</option>
-        <option value="Hitting">Hitting</option><option value="Fielding">Fielding</option><option value="Throwing">Throwing</option>
-      </select>
-      <div style={{display: "grid", gap: 10}}>
-        {filtered.map(drill => (
-          <div key={drill.id} style={{padding: 12, border: "1px solid #ddd", borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center"}}>
-            <div>
-              <strong>{drill.name}</strong> <span style={{background: "#e8f5e9", padding: "2px 8px", borderRadius: 4, fontSize: 12}}>{drill.category}</span>
-              <br/><small style={{color: "#666"}}>{drill.duration} min</small>
-              {drill.video_url && <a href={drill.video_url} target="_blank" style={{marginLeft: 10}}>📺 Watch</a>}
-            </div>
-            <button onClick={() => onAddToMine(drill)} style={{padding: "8px 12px", background: "#4caf50", color: "white", border: "none", borderRadius: 6, cursor: "pointer"}}>+ Add to My Drills</button>
-          </div>
-        ))}
-        {filtered.length === 0 && <p>No drills yet. Be the first to add one!</p>}
+    <div className="card">
+      <div className="card-title">🌐 Community Drill Library</div>
+      <p style={{color: P.textMuted, fontSize: 13, marginBottom: 14}}>Browse drills other coaches have saved!</p>
+      <div style={{marginBottom: 14}}>
+        <select className="select" value={category} onChange={e => setCategory(e.target.value)}>
+          <option value="All">All Categories</option>
+          <option value="Hitting">Hitting</option><option value="Fielding">Fielding</option><option value="Throwing">Throwing</option><option value="Running">Running</option><option value="Warmup">Warmup</option>
+        </select>
       </div>
+      {filtered.map(drill => (
+        <div key={drill.id} style={{padding: 14, border: `1.5px solid ${P.border}`, borderRadius: 10, marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10}}>
+          <div>
+            <div style={{fontWeight: 700, fontSize: 15}}>{drill.name}</div>
+            <div style={{display: "flex", gap: 6, marginTop: 4}}>
+              <span style={{background: getCatColor(drill.category) + "20", color: getCatColor(drill.category), padding: "3px 8px", borderRadius: 12, fontSize: 11, fontWeight: 800}}>{drill.category}</span>
+              <span style={{color: P.textMuted, fontSize: 12}}>{drill.duration} min</span>
+            </div>
+            {drill.video_url && <a href={drill.video_url} target="_blank" style={{color: P.steel, fontSize: 12, marginTop: 4, display: "block"}}>📺 Watch Video</a>}
+          </div>
+          <button onClick={() => onAddToMine(drill)} style={{padding: "8px 14px", background: "#4caf50", color: "white", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer"}}>+ Add to My Drills</button>
+        </div>
+      ))}
+      {filtered.length === 0 && <p style={{color: P.textMuted, textAlign: "center", padding: 20}}>No drills yet. Be the first to add one!</p>}
     </div>
   );
 }
@@ -135,22 +157,24 @@ export default function AuthApp() {
     });
   }, []);
 
-  if (loading) return <div style={{minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24}}>Loading...</div>;
+  if (loading) return <div style={{minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, background: P.bg}}>Loading...</div>;
   if (!user) return <LoginScreen onLogin={setUser} />;
   if (!hasTeam) return <CreateTeam user={user} onCreated={() => setHasTeam(true)} />;
 
   return (
-    <div style={{background: "#f4f6f9", minHeight: "100vh"}}>
-      <div style={{padding: 16, background: "white", borderBottom: "3px solid #e3b440", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10}}>
-        <h1 style={{fontFamily: "'Oswald', sans-serif", fontSize: 20}}>⚾ PracticePro</h1>
-        <div style={{display: "flex", gap: 10}}>
-          <button onClick={() => { setShowAddDrill(!showAddDrill); setShowCommunity(false); }} style={{padding: "8px 16px", background: showAddDrill ? "#e3b440" : "#5f8db5", color: "white", border: "none", borderRadius: 8}}>+ Add My Drill</button>
-          <button onClick={() => { setShowCommunity(!showCommunity); setShowAddDrill(false); }} style={{padding: "8px 16px", background: showCommunity ? "#e3b440" : "#4caf50", color: "white", border: "none", borderRadius: 8}}>🌐 Community Library</button>
+    <div style={{background: P.bg, minHeight: "100vh", maxWidth: 680, margin: "0 auto"}}>
+      <div style={{padding: "11px 16px", background: P.surface, borderBottom: `3px solid ${P.gold}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10}}>
+        <h1 style={{fontFamily: "'Oswald', sans-serif", fontSize: 17, fontWeight: 700, color: P.text}}>⚾ PracticePro</h1>
+        <div style={{display: "flex", gap: 8}}>
+          <button onClick={() => { setShowAddDrill(!showAddDrill); setShowCommunity(false); }} style={{padding: "6px 12px", background: showAddDrill ? P.gold : P.steel, color: "white", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer"}}>+ Add My Drill</button>
+          <button onClick={() => { setShowCommunity(!showCommunity); setShowAddDrill(false); }} style={{padding: "6px 12px", background: showCommunity ? P.gold : "#4caf50", color: "white", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer"}}>🌐 Community</button>
         </div>
       </div>
       
-      {showAddDrill && <div style={{maxWidth: 600, margin: "0 auto", padding: 20}}><AddDrillForm user={user} onSaved={() => setShowAddDrill(false)} /></div>}
-      {showCommunity && <div style={{maxWidth: 800, margin: "0 auto", padding: 20}}><CommunityDrills user={user} onAddToMine={(d) => alert("Added to your drills!")} /></div>}
+      <div style={{padding: 16}}>
+        {showAddDrill && <AddDrillForm user={user} onSaved={() => setShowAddDrill(false)} />}
+        {showCommunity && <CommunityDrills user={user} onAddToMine={(d) => alert("Added to your drills!")} />}
+      </div>
       
       <PracticePlanner user={user} onLogout={() => setUser(null)} />
     </div>
