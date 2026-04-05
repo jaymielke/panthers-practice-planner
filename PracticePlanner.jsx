@@ -83,7 +83,7 @@ const VENUE_COLORS={
 const PLAYER_FILTERS=["Any","1–4","5–10","10+"];
 const BAT_COLOR={bg:"rgba(239,107,54,0.08)",border:"rgba(239,107,54,0.3)",text:"#d4581e"};
 const BAT_DRILL={id:"batting",name:"Batting Practice",category:"Hitting",notes:"5 minutes per player hitting\nOn Deck: hitting off tee",players:0,duration:0,venue:"Both",video:""};
-const LOGO="/KMBA-Panthers-Logo_U8_Tier_1.png";
+const LOGO="/PracticePro_Logo.png";
 
 // ─── Roster ───────────────────────────────────────────────────────────────────
 const ROSTER=[
