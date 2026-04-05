@@ -851,8 +851,13 @@ export default function PracticePlanner({user,team:initialTeam,onTeamUpdate,onSi
       if(!upErr){const{data:{publicUrl}}=supabase.storage.from("logos").getPublicUrl(path);logo_url=publicUrl;}
     }
     const roster=parseRosterText(sRosterText);
+    const newCoachName=sCoachName.trim()||sName.trim();
     const{data,error}=await supabase.from("teams").update({team_name:sName,coach_name:sCoachName,age_group:sAge,season:sSeason,logo_url,roster}).eq("id",team.id).select().single();
-    if(!error&&data){updateTeam(data);}
+    if(!error&&data){
+      updateTeam(data);
+      // Update attribution on all previously published drills
+      await supabase.from("community_drills").update({team_name:newCoachName}).eq("user_id",userId);
+    }
     setSSaving(false);
     setShowSettings(false);
     toast.show("Settings saved ✓");
