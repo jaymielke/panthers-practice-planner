@@ -20,7 +20,7 @@ const AUTH_CSS = `
 body{background:${P.bg};font-family:'Nunito',sans-serif;color:${P.text};min-height:100vh;}
 .auth-wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
 .auth-card{background:${P.surface};border-radius:20px;border:1.5px solid ${P.border};padding:32px 28px;width:100%;max-width:400px;}
-.auth-logo{width:72px;height:72px;object-fit:contain;margin:0 auto 8px;display:block;}
+.auth-logo{width:90px;height:90px;object-fit:contain;margin:0 auto 8px;display:block;border-radius:14px;}
 .auth-brand{font-family:'Oswald',sans-serif;font-size:28px;font-weight:700;color:${P.black};text-align:center;line-height:1;}
 .auth-tagline{font-size:12px;color:${P.steel};text-transform:uppercase;letter-spacing:2px;font-weight:800;text-align:center;margin-top:4px;margin-bottom:28px;}
 .auth-title{font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;color:${P.black};margin-bottom:20px;}
@@ -77,7 +77,7 @@ function LoginScreen({ onSwitch }) {
   return (
     <div className="auth-wrap">
       <div className="auth-card">
-        <img src="/KMBA-Panthers-Logo_U8_Tier_1.png" alt="PracticePro" className="auth-logo"/>
+        <img src="/PracticePro_Logo.png" alt="PracticePro" className="auth-logo"/>
         <div className="auth-brand">PracticePro</div>
         <div className="auth-tagline">Baseball Practice Planner</div>
         {error && <div className="auth-error">{error}</div>}
@@ -119,7 +119,7 @@ function SignupScreen({ onSwitch }) {
   return (
     <div className="auth-wrap">
       <div className="auth-card">
-        <img src="/KMBA-Panthers-Logo_U8_Tier_1.png" alt="PracticePro" className="auth-logo"/>
+        <img src="/PracticePro_Logo.png" alt="PracticePro" className="auth-logo"/>
         <div className="auth-brand">PracticePro</div>
         <div className="auth-tagline">Create your free account</div>
         {error && <div className="auth-error">{error}</div>}
@@ -349,7 +349,7 @@ export default function AuthApp() {
   // Loading spinner
   if (loading) return (
     <div style={{minHeight:"100vh",background:P.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16}}>
-      <img src="/KMBA-Panthers-Logo_U8_Tier_1.png" alt="PracticePro" style={{width:72,height:72,objectFit:"contain",animation:"pp-spin 2s linear infinite"}}/>
+      <img src="/PracticePro_Logo.png" alt="PracticePro" style={{width:72,height:72,objectFit:"contain",animation:"pp-spin 2s linear infinite"}}/>
       <div style={{fontFamily:"'Oswald',sans-serif",fontSize:16,color:P.steel,letterSpacing:1,fontWeight:700}}>Loading...</div>
       <style>{`@keyframes pp-spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}`}</style>
     </div>
