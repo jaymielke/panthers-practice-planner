@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { supabase } from "./AuthApp.jsx";
+import CommunityLibrary from "./CommunityLibrary.jsx";
 
 // ─── Panthers Chalk Palette ───────────────────────────────────────────────────
 const P = {
@@ -116,7 +118,6 @@ function VenueChip({venue,small=false}){
 }
 
 // ─── Supabase ─────────────────────────────────────────────────────────────────
-import { supabase } from "./AuthApp.jsx";
 
 async function sbGet(table,userId){
   try{const{data,error}=await supabase.from(table).select("id,data").eq("user_id",userId);
@@ -617,9 +618,10 @@ export default function PracticePlanner({user,team:initialTeam,onTeamUpdate,onSi
   useEffect(()=>{let el=document.getElementById("pp-css");if(!el){el=document.createElement("style");el.id="pp-css";document.head.appendChild(el);}el.textContent=APP_CSS;},[]);
 
   // App state
-  const[tab,setTab]=useState("plans");
+  const[tab,setTab]=useState("drills");
   const[drills,setDrills]=useState([]);
   const[plans,setPlans]=useState([]);
+  const[publishedIds,setPublishedIds]=useState(new Set());
   const[mvpCounts,setMvpCounts]=useState({});
   const[undoMvp,setUndoMvp]=useState(null);
   const[attendance,setAttendance]=useState({});
@@ -641,7 +643,11 @@ export default function PracticePlanner({user,team:initialTeam,onTeamUpdate,onSi
   const[createPlayerFilter,setCreatePlayerFilter]=useState("Any");
   const[expandedPicks,setExpandedPicks]=useState({});
   useEffect(()=>save("pp_recent",recentIds),[recentIds]);
-  useEffect(()=>{async function go(){setLoading(true);const[d,p,m,a]=await Promise.all([sbGet("drills",userId),sbGet("plans",userId),sbGetSingle("mvp",userId),sbGetSingle("attendance",userId)]);setDrills(d);setPlans(p);setMvpCounts(m||{});setAttendance(a||{});setLoading(false);}go();},[userId]);
+  useEffect(()=>{async function go(){setLoading(true);const[d,p,m,a]=await Promise.all([sbGet("drills",userId),sbGet("plans",userId),sbGetSingle("mvp",userId),sbGetSingle("attendance",userId)]);setDrills(d);setPlans(p);setMvpCounts(m||{});setAttendance(a||{});
+    // Load published drill names
+    const{data:pubData}=await supabase.from("community_drills").select("drill").eq("user_id",userId);
+    if(pubData)setPublishedIds(new Set(pubData.map(r=>r.drill?.name)));
+    setLoading(false);}go();},[userId]);
 
   // Week strip
   const[weekBase,setWeekBase]=useState(()=>{const p=new URLSearchParams(window.location.search).get("share");return p||today;});
@@ -697,6 +703,19 @@ export default function PracticePlanner({user,team:initialTeam,onTeamUpdate,onSi
   }
   async function delDrill(id){if(!window.confirm("Delete this drill?"))return;setDrills(prev=>prev.filter(d=>d.id!==id));setRecentIds(prev=>prev.filter(x=>x!==id));await sbDelete("drills",id);toast.show("Drill deleted");}
 
+  async function publishDrill(drill){
+    if(publishedIds.has(drill.name)){toast.show("Already published");return;}
+    const{error}=await supabase.from("community_drills").insert([{user_id:userId,team_name:teamName,drill,avg_rating:0,rating_count:0,times_added:0}]);
+    if(!error){setPublishedIds(prev=>new Set([...prev,drill.name]));toast.show("Published to community ✓");}
+    else toast.show("Could not publish");
+  }
+
+  async function addDrillFromCommunity(drill){
+    const dr={...drill,id:Date.now()};
+    setDrills(prev=>[...prev,dr]);
+    await sbUpsert("drills",dr.id,dr,userId);
+  }
+
   // Practice fns
   function togglePick(d){setPicked(prev=>prev.find(p=>p.id===d.id)?prev.filter(p=>p.id!==d.id):prev.length>=3?(toast.show("Max 3 drills"),prev):[...prev,d]);}
   async function savePractice(){
@@ -725,16 +744,23 @@ export default function PracticePlanner({user,team:initialTeam,onTeamUpdate,onSi
 
   function DrillCard({d}){
     const c=CAT[d.category]||CAT["Hitting"];
+    const isPublished=publishedIds.has(d.name);
     return(<div className="drill-item" style={{borderLeftColor:c.border}}>
       <div className="drill-item-header">
         <div style={{flex:1}}>
-          <div className="drill-name">{d.name}</div>
+          <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:3}}>
+            <div className="drill-name" style={{margin:0}}>{d.name}</div>
+            {isPublished&&<span style={{fontSize:9,fontWeight:800,textTransform:"uppercase",letterSpacing:1,background:P.steelDim,color:P.steel,padding:"2px 7px",borderRadius:8,flexShrink:0}}>Published</span>}
+          </div>
           <div className="meta-chips"><CatChip cat={d.category}/><span className="player-chip"><Ico name="users" size={10}/>{d.players} players</span><span className="dur-chip"><Ico name="clock" size={10}/>{d.duration||20}m</span>{d.venue&&d.venue!=="Both"&&<VenueChip venue={d.venue}/>}</div>
           {d.notes&&<ul className="drill-notes">{d.notes.split("\n").filter(Boolean).slice(0,3).map((n,i)=><li key={i}><span style={{color:c.text,fontWeight:900}}>· </span>{n}</li>)}</ul>}
           {d.video&&<a href={d.video} target="_blank" rel="noopener noreferrer" style={{display:"inline-flex",alignItems:"center",gap:5,fontSize:11,color:c.text,marginTop:6,textDecoration:"none",fontWeight:800}}><Ico name="video" size={12}/> Watch video</a>}
         </div>
         <div className="drill-actions">
           <button className="icon-btn" onClick={()=>openEdit(d)}><Ico name="pencil" size={14}/></button>
+          <button className="icon-btn" title={isPublished?"Already published":"Share to community"} onClick={()=>publishDrill(d)} style={isPublished?{color:P.steel}:{}}>
+            <Ico name="share" size={14}/>
+          </button>
           <button className="icon-btn danger" onClick={()=>delDrill(d.id)}><Ico name="trash" size={14}/></button>
         </div>
       </div>
@@ -802,7 +828,7 @@ export default function PracticePlanner({user,team:initialTeam,onTeamUpdate,onSi
   }
 
   const selectedPlan=planMap[selectedDate]||null;
-  const navTabs=[{id:"drills",label:"Drills",icon:"dumbbell"},{id:"create",label:"Create",icon:"calPlus"},{id:"plans",label:"Plans",icon:"calDays"},{id:"mvp",label:"MVP",icon:"trophy"},{id:"community",label:"Community",icon:"users"}];
+  const navTabs=[{id:"drills",label:"Drills",icon:"dumbbell"},{id:"community",label:"Community",icon:"users"},{id:"create",label:"Create",icon:"calPlus"},{id:"plans",label:"Practices",icon:"calDays"},{id:"mvp",label:"Attendance",icon:"trophy"}];
   const AGE_GROUPS=["U7","U8","U9","U10","U11","U12","U13","U14","U15","U16","U17","U18"];
 
   function parseRosterText(text){
@@ -1106,15 +1132,7 @@ export default function PracticePlanner({user,team:initialTeam,onTeamUpdate,onSi
 
         {/* ══ COMMUNITY ══ */}
         {tab==="community"&&(
-          <div style={{padding:"0 0 24px"}}>
-            <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",marginBottom:14}}>
-              <div><div className="section-title">Community Library</div><div className="section-sub">Drills shared by coaches everywhere</div></div>
-            </div>
-            <div className="empty" style={{marginTop:40}}>
-              <Ico name="users" size={36}/>
-              <p style={{marginTop:12}}>{"Community library\ncoming soon!"}</p>
-            </div>
-          </div>
+          <CommunityLibrary user={user} userDrills={drills} teamName={teamName} onAddDrill={addDrillFromCommunity} toast={toast}/>
         )}
 
       </div>
