@@ -281,7 +281,7 @@ body{background:${P.bg};font-family:'Nunito',sans-serif;color:${P.text};min-heig
 .bat-note::before{content:"· ";color:${BAT_COLOR.text};font-weight:900;}
 
 /* Schedule preview grid */
-.schedule-grid{display:grid;grid-template-columns:minmax(0,70fr) minmax(0,30fr);gap:10px;margin-bottom:8px;}
+.schedule-grid{display:grid;grid-template-columns:minmax(0,70%) minmax(0,70%);gap:10px;margin-bottom:8px;}
 .schedule-col-label{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:${P.textDim};margin-bottom:6px;display:flex;align-items:center;gap:5px;}
 .bat-station{background:${BAT_COLOR.bg};border:1.5px solid ${BAT_COLOR.border};border-radius:10px;padding:12px;}
 .bat-station-title{font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;color:${BAT_COLOR.text};margin-bottom:6px;display:flex;align-items:center;gap:6px;}
@@ -353,7 +353,7 @@ body{background:${P.bg};font-family:'Nunito',sans-serif;color:${P.text};min-heig
 .ps-timer-btn:disabled{opacity:0.22;cursor:not-allowed;pointer-events:none;}
 .ps-prog-wrap{height:4px;background:rgba(95,141,181,0.15);}
 .ps-prog-fill{height:4px;background:${P.gold};transition:width 0.5s linear;}
-.col-hdrs{display:grid;grid-template-columns:minmax(0,70fr) minmax(0,30fr);gap:7px;padding:8px 14px 2px;}
+.col-hdrs{display:grid;grid-template-columns:minmax(0,70%) minmax(0,70%);gap:7px;padding:8px 14px 2px;}
 .col-hdr{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:${P.textDim};display:flex;align-items:center;gap:4px;}
 .col-hdr.bat{color:${BAT_COLOR.text};}
 .ps-blocks{padding:0 14px 24px;display:flex;flex-direction:column;gap:7px;margin-top:7px;}
