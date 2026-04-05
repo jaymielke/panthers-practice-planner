@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-
+ 
 // ─── Panthers Chalk Palette ───────────────────────────────────────────────────
 const P = {
   steel:      "#5f8db5",
