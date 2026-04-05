@@ -629,6 +629,7 @@ export default function PracticePlanner({user,team:initialTeam,onTeamUpdate,onSi
   const[mvpSubTab,setMvpSubTab]=useState("mvp");
   const[showSettings,setShowSettings]=useState(false);
   const[sName,setSName]=useState(initialTeam?.team_name||"");
+  const[sCoachName,setSCoachName]=useState(initialTeam?.coach_name||"");
   const[sAge,setSAge]=useState(initialTeam?.age_group||"");
   const[sSeason,setSSeason]=useState(initialTeam?.season||"");
   const[sRosterText,setSRosterText]=useState((initialTeam?.roster||[]).map(p=>`${p.jersey}, ${p.first}, ${p.last}`).join("\n"));
@@ -705,7 +706,8 @@ export default function PracticePlanner({user,team:initialTeam,onTeamUpdate,onSi
 
   async function publishDrill(drill){
     if(publishedIds.has(drill.name)){toast.show("Already published");return;}
-    const{error}=await supabase.from("community_drills").insert([{user_id:userId,team_name:teamName,drill,avg_rating:0,rating_count:0,times_added:0}]);
+    const coachName=team?.coach_name||teamName;
+    const{error}=await supabase.from("community_drills").insert([{user_id:userId,team_name:coachName,drill,avg_rating:0,rating_count:0,times_added:0}]);
     if(!error){setPublishedIds(prev=>new Set([...prev,drill.name]));toast.show("Published to community ✓");}
     else toast.show("Could not publish");
   }
@@ -849,7 +851,7 @@ export default function PracticePlanner({user,team:initialTeam,onTeamUpdate,onSi
       if(!upErr){const{data:{publicUrl}}=supabase.storage.from("logos").getPublicUrl(path);logo_url=publicUrl;}
     }
     const roster=parseRosterText(sRosterText);
-    const{data,error}=await supabase.from("teams").update({team_name:sName,age_group:sAge,season:sSeason,logo_url,roster}).eq("id",team.id).select().single();
+    const{data,error}=await supabase.from("teams").update({team_name:sName,coach_name:sCoachName,age_group:sAge,season:sSeason,logo_url,roster}).eq("id",team.id).select().single();
     if(!error&&data){updateTeam(data);}
     setSSaving(false);
     setShowSettings(false);
@@ -1150,6 +1152,9 @@ export default function PracticePlanner({user,team:initialTeam,onTeamUpdate,onSi
 
             <div className="label" style={{marginBottom:5}}>Team Name</div>
             <input className="input" style={{marginBottom:12}} value={sName} onChange={e=>setSName(e.target.value)}/>
+
+            <div className="label" style={{marginBottom:5}}>Your Name</div>
+            <input className="input" style={{marginBottom:12}} placeholder="e.g. Jay Mielke" value={sCoachName} onChange={e=>setSCoachName(e.target.value)}/>
 
             <div className="label" style={{marginBottom:5}}>Age Group</div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:6,marginBottom:12}}>
