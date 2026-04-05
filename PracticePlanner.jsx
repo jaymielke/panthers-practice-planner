@@ -281,7 +281,7 @@ body{background:${P.bg};font-family:'Nunito',sans-serif;color:${P.text};min-heig
 .bat-note::before{content:"· ";color:${BAT_COLOR.text};font-weight:900;}
 
 /* Schedule preview grid */
-.schedule-grid{display:grid;grid-template-columns:minmax(0,70%) minmax(0,70%);gap:10px;margin-bottom:8px;}
+.schedule-grid{display:grid;grid-template-columns:minmax(0,70%) minmax(0,30%);gap:10px;margin-bottom:8px;}
 .schedule-col-label{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:${P.textDim};margin-bottom:6px;display:flex;align-items:center;gap:5px;}
 .bat-station{background:${BAT_COLOR.bg};border:1.5px solid ${BAT_COLOR.border};border-radius:10px;padding:12px;}
 .bat-station-title{font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;color:${BAT_COLOR.text};margin-bottom:6px;display:flex;align-items:center;gap:6px;}
@@ -353,7 +353,7 @@ body{background:${P.bg};font-family:'Nunito',sans-serif;color:${P.text};min-heig
 .ps-timer-btn:disabled{opacity:0.22;cursor:not-allowed;pointer-events:none;}
 .ps-prog-wrap{height:4px;background:rgba(95,141,181,0.15);}
 .ps-prog-fill{height:4px;background:${P.gold};transition:width 0.5s linear;}
-.col-hdrs{display:grid;grid-template-columns:minmax(0,70%) minmax(0,70%);gap:7px;padding:8px 14px 2px;}
+.col-hdrs{display:grid;grid-template-columns:minmax(0,70%) minmax(0,30%);gap:7px;padding:8px 14px 2px;}
 .col-hdr{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:${P.textDim};display:flex;align-items:center;gap:4px;}
 .col-hdr.bat{color:${BAT_COLOR.text};}
 .ps-blocks{padding:0 14px 24px;display:flex;flex-direction:column;gap:7px;margin-top:7px;}
@@ -399,6 +399,7 @@ body{background:${P.bg};font-family:'Nunito',sans-serif;color:${P.text};min-heig
 .schedule-grid{grid-template-columns:1fr;}
 .ps-blocks{padding:0 10px 24px;}
 }
+.bat-split-grid{display:grid;grid-template-columns:minmax(0,68%) minmax(0,32%);gap:8px;}
 .ps-bat-col{min-width:0;word-break:break-word;}
 .ps-bat-note{white-space:normal;word-break:break-word;}
 ::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:${P.border};border-radius:3px;}
@@ -552,7 +553,7 @@ function PracticeSchedule({plan,logoUrl,teamName}){
           {done&&<div className="ps-done-banner"><img src={logoUrl||LOGO} alt={teamName} className="ps-done-logo"/><div className="ps-done-title">Practice Complete!</div><div className="ps-done-sub">Great work, {teamName}!</div></div>}
             <div className="col-hdr bat"><Ico name="bat" size={10}/> Batting</div>
           </div>
-          <div style={{display:"grid",gridTemplateColumns:"70% 30%",gap:7}}>
+          <div className="bat-split-grid">
             <div style={{display:"flex",flexDirection:"column",gap:7}}>
               {blocks.slice(1,-1).map((b,ri)=>{
                 const gi=ri+1,isCur=started&&!done&&gi===cur,isDone=started&&(done||gi<cur),isOpen=open===gi,c=b.drill?(CAT[b.drill.category]||CAT["Hitting"]):null;
