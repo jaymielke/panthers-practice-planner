@@ -147,6 +147,7 @@ function SignupScreen({ onSwitch }) {
 // ─── Onboarding Step 1: Team Info ─────────────────────────────────────────────
 function OnboardTeam({ userId, onNext }) {
   const [teamName, setTeamName] = useState("");
+  const [coachName, setCoachName] = useState("");
   const [ageGroup, setAgeGroup] = useState("");
   const [season, setSeason] = useState("2026");
   const [loading, setLoading] = useState(false);
@@ -159,8 +160,8 @@ function OnboardTeam({ userId, onNext }) {
     if (!ageGroup) return setError("Please select an age group");
     setLoading(true); setError("");
     const { data, error } = await supabase.from("teams").insert([{
-      user_id: userId, team_name: teamName.trim(), age_group: ageGroup,
-      season: season.trim(), logo_url: null, roster: []
+      user_id: userId, team_name: teamName.trim(), coach_name: coachName.trim(),
+      age_group: ageGroup, season: season.trim(), logo_url: null, roster: []
     }]).select().single();
     if (error) { setError(error.message); setLoading(false); return; }
     onNext(data);
@@ -177,6 +178,10 @@ function OnboardTeam({ userId, onNext }) {
           <div className="auth-field">
             <label className="auth-label">Team Name</label>
             <input className="auth-input" placeholder="e.g. Panthers, Eagles, Trojans" value={teamName} onChange={e => setTeamName(e.target.value)} required/>
+          </div>
+          <div className="auth-field">
+            <label className="auth-label">Your Name</label>
+            <input className="auth-input" placeholder="e.g. Jay Mielke" value={coachName} onChange={e => setCoachName(e.target.value)}/>
           </div>
           <div className="auth-field">
             <label className="auth-label">Age Group</label>
