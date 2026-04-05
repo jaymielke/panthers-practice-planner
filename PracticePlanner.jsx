@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
- 
+
 // ─── Panthers Chalk Palette ───────────────────────────────────────────────────
 const P = {
   steel:      "#5f8db5",
@@ -551,6 +551,9 @@ function PracticeSchedule({plan,logoUrl,teamName}){
       {hasBat?(
         <div className="ps-blocks">
           {done&&<div className="ps-done-banner"><img src={logoUrl||LOGO} alt={teamName} className="ps-done-logo"/><div className="ps-done-title">Practice Complete!</div><div className="ps-done-sub">Great work, {teamName}!</div></div>}
+          <Block b={blocks[0]} gi={0}/>
+          <div className="col-hdrs">
+            <div className="col-hdr"><Ico name="dumbbell" size={10}/> Main Drills</div>
             <div className="col-hdr bat"><Ico name="bat" size={10}/> Batting</div>
           </div>
           <div className="bat-split-grid">
