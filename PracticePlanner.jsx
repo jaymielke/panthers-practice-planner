@@ -794,7 +794,41 @@ export default function PracticePlanner({user,team:initialTeam,onTeamUpdate,onSi
   }
 
   const selectedPlan=planMap[selectedDate]||null;
-  const navTabs=[{id:"drills",label:"Drills",icon:"dumbbell"},{id:"create",label:"Create",icon:"calPlus"},{id:"plans",label:"Plans",icon:"calDays"},{id:"mvp",label:"MVP",icon:"trophy"}];
+  const navTabs=[{id:"drills",label:"Drills",icon:"dumbbell"},{id:"create",label:"Create",icon:"calPlus"},{id:"plans",label:"Plans",icon:"calDays"},{id:"mvp",label:"MVP",icon:"trophy"},{id:"community",label:"Community",icon:"users"}];
+  const[showSettings,setShowSettings]=useState(false);
+  const[sName,setSName]=useState(team?.team_name||"");
+  const[sAge,setSAge]=useState(team?.age_group||"");
+  const[sSeason,setSSeason]=useState(team?.season||"");
+  const[sRosterText,setSRosterText]=useState((team?.roster||[]).map(p=>`${p.jersey}, ${p.first}, ${p.last}`).join("\n"));
+  const[sLogoFile,setSLogoFile]=useState(null);
+  const[sLogoPreview,setSLogoPreview]=useState(team?.logo_url||null);
+  const[sSaving,setSSaving]=useState(false);
+  const AGE_GROUPS=["U7","U8","U9","U10","U11","U12","U13","U14","U15","U16","U17","U18"];
+
+  function parseRosterText(text){
+    return text.split("\n").filter(l=>l.trim()).map((line,i)=>{
+      const parts=line.split(",").map(p=>p.trim());
+      const jersey=parseInt(parts[0]);
+      return{id:`p${parts[0]?.replace(/\s/g,"")}`,jersey:isNaN(jersey)?i+1:jersey,first:parts[1]||"",last:parts[2]||""};
+    }).filter(p=>p.first);
+  }
+
+  async function saveSettings(){
+    setSSaving(true);
+    let logo_url=team?.logo_url||null;
+    if(sLogoFile){
+      const ext=sLogoFile.name.split(".").pop();
+      const path=`${team.id}.${ext}`;
+      const{error:upErr}=await supabase.storage.from("logos").upload(path,sLogoFile,{upsert:true});
+      if(!upErr){const{data:{publicUrl}}=supabase.storage.from("logos").getPublicUrl(path);logo_url=publicUrl;}
+    }
+    const roster=parseRosterText(sRosterText);
+    const{data,error}=await supabase.from("teams").update({team_name:sName,age_group:sAge,season:sSeason,logo_url,roster}).eq("id",team.id).select().single();
+    if(!error&&data){updateTeam(data);}
+    setSSaving(false);
+    setShowSettings(false);
+    toast.show("Settings saved ✓");
+  }
 
   return(
     <div className="app">
@@ -802,9 +836,14 @@ export default function PracticePlanner({user,team:initialTeam,onTeamUpdate,onSi
       <div className="top-bar">
         <img src={logoUrl} alt={teamName}/>
         <div><div className="top-bar-title">{teamName}</div><div className="top-bar-sub">{teamSub}</div></div>
-        <button className="theme-btn" onClick={onSignOut} title="Sign out" style={{marginLeft:"auto"}}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-        </button>
+        <div style={{marginLeft:"auto",display:"flex",gap:6}}>
+          <button className="theme-btn" onClick={()=>setShowSettings(true)} title="Settings">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </button>
+          <button className="theme-btn" onClick={onSignOut} title="Sign out">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+          </button>
+        </div>
       </div>
 
       {/* Week strip */}
@@ -1065,11 +1104,66 @@ export default function PracticePlanner({user,team:initialTeam,onTeamUpdate,onSi
           </>);
         })()}
 
+        {/* ══ COMMUNITY ══ */}
+        {tab==="community"&&(
+          <div style={{padding:"0 0 24px"}}>
+            <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",marginBottom:14}}>
+              <div><div className="section-title">Community Library</div><div className="section-sub">Drills shared by coaches everywhere</div></div>
+            </div>
+            <div className="empty" style={{marginTop:40}}>
+              <Ico name="users" size={36}/>
+              <p style={{marginTop:12}}>{"Community library\ncoming soon!"}</p>
+            </div>
+          </div>
+        )}
+
       </div>
 
       <nav className="bottom-nav">
         {navTabs.map(({id,label,icon})=>(<button key={id} className={`nav-tab${tab===id?" active":""}`} onClick={()=>setTab(id)}><Ico name={icon} size={22}/>{label}{id==="plans"&&plans.length>0&&<span className="nav-badge">{plans.length}</span>}</button>))}
       </nav>
+
+      {/* Settings modal */}
+      {showSettings&&(
+        <div className="overlay" onClick={e=>{if(e.target===e.currentTarget)setShowSettings(false);}}>
+          <div className="modal">
+            <div className="modal-handle"/>
+            <div className="modal-title">Team Settings</div>
+
+            <div className="label" style={{marginBottom:5}}>Team Name</div>
+            <input className="input" style={{marginBottom:12}} value={sName} onChange={e=>setSName(e.target.value)}/>
+
+            <div className="label" style={{marginBottom:5}}>Age Group</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:6,marginBottom:12}}>
+              {AGE_GROUPS.map(a=>(
+                <button key={a} type="button" onClick={()=>setSAge(a)}
+                  style={{padding:"7px 4px",borderRadius:8,border:`1.5px solid ${sAge===a?P.steel:P.border}`,background:sAge===a?P.steel:P.inputBg,color:sAge===a?"#fff":P.textMuted,fontFamily:"'Nunito',sans-serif",fontSize:12,fontWeight:800,cursor:"pointer"}}>
+                  {a}
+                </button>
+              ))}
+            </div>
+
+            <div className="label" style={{marginBottom:5}}>Season Year</div>
+            <input className="input" style={{marginBottom:12}} value={sSeason} onChange={e=>setSSeason(e.target.value)}/>
+
+            <div className="label" style={{marginBottom:5}}>Team Logo</div>
+            {sLogoPreview&&<img src={sLogoPreview} alt="Logo" style={{width:64,height:64,objectFit:"contain",borderRadius:10,border:`1.5px solid ${P.border}`,marginBottom:8,display:"block"}}/>}
+            <label style={{display:"block",width:"100%",padding:"10px",background:P.inputBg,border:`1.5px solid ${P.border}`,borderRadius:10,fontFamily:"'Nunito',sans-serif",fontSize:13,fontWeight:800,color:P.steel,textAlign:"center",cursor:"pointer",marginBottom:12}}>
+              {sLogoPreview?"Change Logo":"Upload Logo"}
+              <input type="file" accept="image/png,image/jpeg" onChange={e=>{const f=e.target.files[0];if(f){setSLogoFile(f);setSLogoPreview(URL.createObjectURL(f));}}} style={{display:"none"}}/>
+            </label>
+
+            <div className="label" style={{marginBottom:5}}>Roster</div>
+            <textarea className="input" rows={8} style={{resize:"vertical",lineHeight:1.7,marginBottom:4}} value={sRosterText} onChange={e=>setSRosterText(e.target.value)} placeholder={"25, Lawson, Buck\n6, Ethan, Deitner"}/>
+            <div style={{fontSize:11,color:P.textDim,fontWeight:600,marginBottom:14}}>Format: Jersey #, First Name, Last Name</div>
+
+            <div className="btn-row">
+              <button className="btn btn-primary" onClick={saveSettings} disabled={sSaving}>{sSaving?"Saving...":"Save Changes"}</button>
+              <button className="btn btn-ghost" onClick={()=>setShowSettings(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Edit plan modal */}
       {editPlan&&(<div className="overlay" onClick={e=>{if(e.target===e.currentTarget)setEditPlan(null);}}>
