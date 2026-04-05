@@ -233,13 +233,13 @@ function OnboardLogo({ team, onNext, onSkip }) {
         <div className="auth-brand" style={{textAlign:"left",fontSize:22,marginBottom:4}}>Upload your logo</div>
         <div className="onboard-hint">PNG or JPG, under 2MB. You can always change this later.</div>
         {error && <div className="auth-error">{error}</div>}
-        <label className="logo-upload" style={{display:"block"}}>
-          {preview
-            ? <img src={preview} alt="Logo preview" className="logo-upload-img"/>
-            : <div style={{fontSize:32,marginBottom:8}}>📁</div>
-          }
-          <div className="logo-upload-text">{preview ? "Tap to change" : "Tap to choose logo"}</div>
-          <div className="logo-upload-sub">PNG or JPG · max 2MB</div>
+        {preview && (
+          <div style={{textAlign:"center",marginBottom:14}}>
+            <img src={preview} alt="Logo preview" style={{width:90,height:90,objectFit:"contain",borderRadius:12,border:`1.5px solid ${P.border}`}}/>
+          </div>
+        )}
+        <label style={{display:"block",width:"100%",padding:"11px 20px",background:P.inputBg,border:`1.5px solid ${P.border}`,borderRadius:12,fontFamily:"'Nunito',sans-serif",fontSize:14,fontWeight:800,color:P.steel,textAlign:"center",cursor:"pointer",marginBottom:14}}>
+          {preview ? "Change Logo" : "Choose Logo File"}
           <input type="file" accept="image/png,image/jpeg,image/jpg" onChange={handleFile} style={{display:"none"}}/>
         </label>
         <button className="auth-btn" onClick={handleUpload} disabled={loading}>
