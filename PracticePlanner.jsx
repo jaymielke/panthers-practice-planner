@@ -625,6 +625,14 @@ export default function PracticePlanner({user,team:initialTeam,onTeamUpdate,onSi
   const[attendance,setAttendance]=useState({});
   const[attDate,setAttDate]=useState(()=>new Date().toISOString().split("T")[0]);
   const[mvpSubTab,setMvpSubTab]=useState("mvp");
+  const[showSettings,setShowSettings]=useState(false);
+  const[sName,setSName]=useState(initialTeam?.team_name||"");
+  const[sAge,setSAge]=useState(initialTeam?.age_group||"");
+  const[sSeason,setSSeason]=useState(initialTeam?.season||"");
+  const[sRosterText,setSRosterText]=useState((initialTeam?.roster||[]).map(p=>`${p.jersey}, ${p.first}, ${p.last}`).join("\n"));
+  const[sLogoFile,setSLogoFile]=useState(null);
+  const[sLogoPreview,setSLogoPreview]=useState(initialTeam?.logo_url||null);
+  const[sSaving,setSSaving]=useState(false);
   const[recentIds,setRecentIds]=useState(()=>load("pp_recent",[]));
   const[loading,setLoading]=useState(true);
   const toast=useToast();
@@ -795,14 +803,6 @@ export default function PracticePlanner({user,team:initialTeam,onTeamUpdate,onSi
 
   const selectedPlan=planMap[selectedDate]||null;
   const navTabs=[{id:"drills",label:"Drills",icon:"dumbbell"},{id:"create",label:"Create",icon:"calPlus"},{id:"plans",label:"Plans",icon:"calDays"},{id:"mvp",label:"MVP",icon:"trophy"},{id:"community",label:"Community",icon:"users"}];
-  const[showSettings,setShowSettings]=useState(false);
-  const[sName,setSName]=useState(team?.team_name||"");
-  const[sAge,setSAge]=useState(team?.age_group||"");
-  const[sSeason,setSSeason]=useState(team?.season||"");
-  const[sRosterText,setSRosterText]=useState((team?.roster||[]).map(p=>`${p.jersey}, ${p.first}, ${p.last}`).join("\n"));
-  const[sLogoFile,setSLogoFile]=useState(null);
-  const[sLogoPreview,setSLogoPreview]=useState(team?.logo_url||null);
-  const[sSaving,setSSaving]=useState(false);
   const AGE_GROUPS=["U7","U8","U9","U10","U11","U12","U13","U14","U15","U16","U17","U18"];
 
   function parseRosterText(text){
